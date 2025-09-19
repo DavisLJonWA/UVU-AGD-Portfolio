@@ -1,0 +1,115 @@
+/*
+int $objSize;
+$Size = 5;
+print ($objSize);
+
+string $objName;
+$objName = "Object 1";
+print ($objName);
+
+float $objPos[] = {0,0,0};
+$objPos[1] = 2.5
+
+string $objQua[];
+$objQua = `polySphere -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1`;
+move -r 5 2.5 5 $objQua[0];
+float $radius = `polySphere -q -radius $objQua[0]`;
+polySphere -e -radius ($radius + 2.3) $objQua;
+print(`ls -selection`);
+*/
+
+/*
+softSelect -sse off;
+softSelect -e -softSelectEnabled 0;
+float $objsize = 5;
+string $objname = "Node1";
+polySphere -r $objsize -sx 4 -sy 3 -ax 0 1 0 -cuv 2 -ch 1;
+rename "pSphere1" $objname;
+select -r ($objname + ".e[0:7]");
+scale -r -p 0 0 0 1 0.1 1;
+select -r ($objname + ".f[0:3]");
+polyExtrudeFacet -constructionHistory 1 -keepFacesTogether 1 -pvx 0 -pvy 0 -pvz 0 -divisions 1 -twist 0 -taper 1 -off 0 -thickness 0 -smoothingAngle 30;
+string $extrudeNodes[] = `ls -type "polyExtrudeFace"`;
+string $latestExtrude = $extrudeNodes[`size($extrudeNodes)`-1];
+setAttr ($latestExtrude + ".scale") -type double3 0.886185 1 0.886185;
+select -r ($objname + ".f[0:3]");
+setAttr "polyExtrudeFace1.scale" -type double3 0.887937 1 0.887937 ;
+select -r $objname;
+move -r 0 $objsize 0;
+
+float $objsize = 0.3;
+string $duplicate[] = `duplicate -rr "Node1"`;
+string $newObj = $duplicate[0];
+scale -r $objsize $objsize $objsize $newObj;
+move -r 2.22 1.3 -1.19 $newObj;
+rotate -r -ws -fo -37.745631 -16.715588 -23.810578 $newObj;
+
+float $objsize = 0.2;
+string $duplicate[] = `duplicate -rr "Node1"`;
+string $newObj = $duplicate[0];
+scale -r $objsize $objsize $objsize $newObj;
+move -r 1.07 1.01 -2.10 $newObj;
+rotate -r -ws -fo -23.821521 11.495762 -28.769119 $newObj;
+
+$objsize = 0.1;
+string $duplicate[] = `duplicate -rr "Node1"`;
+string $newObj = $duplicate[0];
+scale -r $objsize $objsize $objsize $newObj;
+move -r 0.996593 2.197615 -1.354344 $newObj;
+rotate -r -os -fo -34.133127 0 0 $newObj;
+
+$objsize = 4;
+polyCone -radius $objsize -height 3 -subdivisionsX 20 -subdivisionsY 8 -subdivisionsZ 0 -axis 0 1 0 -roundCap 0 -createUVs 3 -constructionHistory 1;
+rename "pCone1" "WireBase";
+move -r 0 1.5 0 "WireBase";
+softSelect -softSelectEnabled true;
+softSelect -ssd 6 -sud 0.5;
+select -r "WireBase.vtx[160]";
+move -r 0 3 0;
+
+select -cl;
+*/
+
+softSelect -sse off;
+softSelect -e -softSelectEnabled 0;
+
+float $mainSize = 5;
+string $mainName = "Node1";
+polySphere -r $mainSize -sx 4 -sy 3 -ax 0 1 0 -cuv 2 -ch 1;
+rename "pSphere1" $mainName;
+select -r ($mainName + ".e[0:7]");
+scale -r -p 0 0 0 1 0.1 1;
+select -r ($mainName + ".f[0:3]");
+polyExtrudeFacet -constructionHistory 1 -keepFacesTogether 1 -pvx 0 -pvy 0 -pvz 0 -divisions 1 -twist 0 -taper 1 -off 0 -thickness 0 -smoothingAngle 30;
+string $extNodes[] = `ls -type "polyExtrudeFace"`;
+string $lastExtrude = $extNodes[`size($extNodes)`-1];
+setAttr ($lastExtrude + ".scale") -type double3 0.886185 1 0.886185;
+select -r ($mainName + ".f[0:3]");
+setAttr "polyExtrudeFace1.scale" -type double3 0.887937 1 0.887937 ;
+select -r $mainName;
+move -r 0 $mainSize 0;
+
+float $size2 = 0.3;
+string $dup2[] = `duplicate -rr "Node1"`;
+string $obj2 = $dup2[0];
+scale -r $size2 $size2 $size2 $obj2;
+move -r 2.22 1.3 -1.19 $obj2;
+rotate -r -ws -fo -37.745631 -16.715588 -23.810578 $obj2;
+
+float $size3 = 0.2;
+string $dup3[] = `duplicate -rr "Node1"`;
+string $obj3 = $dup3[0];
+scale -r $size3 $size3 $size3 $obj3;
+move -r 1.07 1.01 -2.10 $obj3;
+rotate -r -ws -fo -23.821521 11.495762 -28.769119 $obj3;
+
+float $size4 = 0.1;
+string $dup4[] = `duplicate -rr "Node1"`;
+string $obj4 = $dup4[0];
+scale -r $size4 $size4 $size4 $obj4;
+move -r 0.996593 2.197615 -1.354344 $obj4;
+rotate -r -os -fo -34.133127 0 0 $obj4;
+
+
+
+select -cl;
