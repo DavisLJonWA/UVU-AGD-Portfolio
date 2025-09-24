@@ -1,0 +1,147 @@
+int $counter = 0;
+int $numStairs = 20;
+float $lenStair = 10;
+float $widStair = 5;
+float $heiStair = 2.5;
+int $pivStair = 1;
+
+while ($counter < $numStairs) {
+    string $namStair = "Step"+ ($counter + 1);  
+    float $heiStep = $heiStair * ($counter + 1);
+    float $rotStep = $counter * 45;
+
+    print("counter: "+($counter+1));
+    print("   steps height: "+ $heiStep);
+    print("   Degree of rotation: "+ $rotStep +"\n");
+
+    polyCube -w $widStair -h $heiStair -d $lenStair -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;
+    rename "pCube1" $namStair;
+    select $namStair;
+    
+    move -r 0 $heiStep 0;
+    rotate -r -os -fo 0 $rotStep 0;
+
+    float $quarter = ($lenStair / 4)+1.5;
+    float $half = $lenStair / 2;
+    float $negQuarter = -$quarter;
+    float $negHalf = -$half;
+
+    if ($pivStair == 1) {
+        move -r 0 0 $half;
+        $pivStair = 2;
+    } 
+    else if ($pivStair == 2) {
+        move -r $quarter 0 $quarter;
+        $pivStair = 3;
+    }
+    else if ($pivStair == 3) {
+        move -r $half 0 0;
+        $pivStair = 4;
+    }
+    else if ($pivStair == 4) {
+        move -r $quarter 0 $negQuarter;
+        $pivStair = 5;
+    }
+    else if ($pivStair == 5) {
+        move -r 0 0 $negHalf;
+        $pivStair = 6;
+    }
+    else if ($pivStair == 6) {
+        move -r $negQuarter 0 $negQuarter;
+        $pivStair = 7;
+    }
+    else if ($pivStair == 7) {
+        move -r $negHalf 0 0;
+        $pivStair = 8;
+    }
+    else {
+        move -r $negQuarter 0 $quarter;
+
+        $pivStair = 1;
+    }
+
+    $counter = $counter + 1;
+
+
+}
+    float $heiPole = ($numStairs * $heiStair)+1.25;
+    float $movPole = $heiPole / 2;
+    float $radPole = $widStair / 2;
+    polyCylinder -r $radPole -h $heiPole -sx 20 -sy 1 -sz 1 -ax 0 1 0 -rcp 0 -cuv 3 -ch 1;
+    move -r 0 $movPole 0 ;
+
+    /*
+    global proc GenerateStaircase(int $numStairs, float $lenStair, float $widStair, float $heiStair, float $startPivot, float $rotIncrement, float $poleOffset) {
+    int $counter = 0;
+    float $pivStair = $startPivot;
+
+    while ($counter < $numStairs) {
+        string $namStair = "Step"+ ($counter + 1);  
+        float $heiStep = $heiStair * ($counter + 1);
+        float $rotStep = $counter * $rotIncrement;
+
+        print("counter: "+($counter+1));
+        print("   steps height: "+ $heiStep);
+        print("   Degree of rotation: "+ $rotStep +"\n");
+
+        polyCube -w $widStair -h $heiStair -d $lenStair -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;
+        rename "pCube1" $namStair;
+        select $namStair;
+        
+        move -r 0 $heiStep 0;
+        rotate -r -os -fo 0 $rotStep 0;
+
+        float $quarter = ($lenStair / 4) + 1.5;
+        float $half = $lenStair / 2;
+        float $negQuarter = -$quarter;
+        float $negHalf = -$half;
+
+        if ($pivStair == 1) {
+            move -r 0 0 $half;
+            $pivStair = 2;
+        } 
+        else if ($pivStair == 2) {
+            move -r $quarter 0 $quarter;
+            $pivStair = 3;
+        }
+        else if ($pivStair == 3) {
+            move -r $half 0 0;
+            $pivStair = 4;
+        }
+        else if ($pivStair == 4) {
+            move -r $quarter 0 $negQuarter;
+            $pivStair = 5;
+        }
+        else if ($pivStair == 5) {
+            move -r 0 0 $negHalf;
+            $pivStair = 6;
+        }
+        else if ($pivStair == 6) {
+            move -r $negQuarter 0 $negQuarter;
+            $pivStair = 7;
+        }
+        else if ($pivStair == 7) {
+            move -r $negHalf 0 0;
+            $pivStair = 8;
+        }
+        else {
+            move -r $negQuarter 0 $quarter;
+            $pivStair = 1;
+        }
+
+        $counter = $counter + 1;
+    }
+
+    // Create the pole
+    float $heiPole = ($numStairs * $heiStair) + $poleOffset;
+    float $movPole = $heiPole / 2;
+    float $radPole = $widStair / 2;
+    polyCylinder -r $radPole -h $heiPole -sx 20 -sy 1 -sz 1 -ax 0 1 0 -rcp 0 -cuv 3 -ch 1;
+    move -r 0 $movPole 0;
+    
+    print("Staircase generated with " + $numStairs + " stairs\n");
+}
+
+// Function call as requested
+GenerateStaircase(20, 8, 3, 0.5, -6, 4, 25);
+*/
