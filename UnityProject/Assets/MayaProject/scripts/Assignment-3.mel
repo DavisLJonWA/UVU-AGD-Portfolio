@@ -1,0 +1,37 @@
+global proc GenerateStaircase(int $numStairs, float $lenStair, float $widStair, float $heiStair, int $pivStair, float $rotStep, float $poleOffset)
+{
+    int $counter = 0;
+    string $lastStep = "";
+    
+    while ($counter < $numStairs) {
+        string $namStair = "Step"+ ($counter + 1);  
+        float $heiStep = $heiStair * ($counter + 1);
+        float $rotation = $rotStep * $counter;
+
+        print("counter: "+($counter+1));
+        print("   steps height: "+ $heiStep);
+        print("   Degree of rotation: "+ $rotation +"\n");
+
+        polyCube -w $widStair -h $heiStair -d $lenStair -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;
+        rename "pCube1" $namStair;
+        select $namStair;
+        
+        move -r 0 $heiStep 0;
+        rotate -r -os -fo 0 $rotation 0;
+        
+        if ($counter > 0) {
+            string $firstFace = $lastStep + ".f[0]";
+            float $facePos[] = `xform -q -ws -t $firstFace`;
+            float $currentPos[] = `xform -q -ws -rp $namStair`;
+            float $offsetX = $facePos[0] - $currentPos[0];
+            float $offsetZ = $facePos[2] - $currentPos[2];
+            move -r $offsetX 0 $offsetZ $namStair;
+        }
+
+        $lastStep = $namStair;
+        $counter = $counter + 1;
+    }
+
+}
+
+GenerateStaircase(50, 8, 8, 2, 5, 4, 45);
