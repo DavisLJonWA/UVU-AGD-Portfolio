@@ -1,6 +1,6 @@
 //Maya ASCII 2025ff03 scene
 //Name: Unit-3-v2-Maya.ma
-//Last modified: Tue, Sep 30, 2025 03:19:24 PM
+//Last modified: Tue, Sep 30, 2025 03:26:07 PM
 //Codeset: 1252
 requires maya "2025ff03";
 requires "stereoCamera" "10.0";
@@ -12,7 +12,7 @@ fileInfo "product" "Maya 2025";
 fileInfo "version" "2025";
 fileInfo "cutIdentifier" "202409190603-cbdc5a7e54";
 fileInfo "osv" "Windows 11 Home v2009 (Build: 26100)";
-fileInfo "UUID" "A9064C36-444A-9A82-3F05-A181F0E83C1B";
+fileInfo "UUID" "5A4413CF-4937-F0F1-4784-7FAA526C5C23";
 createNode transform -s -n "persp";
 	rename -uid "7E9E8A2F-4D14-A472-34E8-AB8FA7E9F2B3";
 	setAttr ".v" no;
@@ -4252,7 +4252,7 @@ createNode aiPhysicalSky -n "aiPhysicalSky1";
 	setAttr ".azimuth" 0;
 	setAttr ".sky_tint" -type "float3" 0 0 0 ;
 createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo";
-	rename -uid "760024B4-4B40-79B4-467D-16BC240ABD51";
+	rename -uid "76760A21-4982-6BA8-384E-82B317166F3D";
 	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
 	setAttr ".tgi[0].vl" -type "double2" 89.880904176880534 -816.90475916105618 ;
 	setAttr ".tgi[0].vh" -type "double2" 1655.5951898911665 193.09524083894385 ;
