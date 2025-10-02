@@ -5,10 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c194b7f-d35c-41f1-b7b8-0ef4459cfed0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Unit-3-v2-Maya.ma" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/MayaProject/Unit-3-v2-Maya.ma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 3.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 3.unity" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -100,7 +99,7 @@
       <updated>1757913910754</updated>
       <workItem from="1757913912552" duration="100000" />
       <workItem from="1759290893518" duration="402000" />
-      <workItem from="1759292104121" duration="1046000" />
+      <workItem from="1759292104121" duration="1674000" />
     </task>
     <servers />
   </component>
