@@ -5,9 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c194b7f-d35c-41f1-b7b8-0ef4459cfed0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 3.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 3.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Unit-4-Draft-Portait.ma" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/MayaProject/Unit-4-Draft-Portait.ma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectVersion.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ShaderGraphSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ShaderGraphSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/URPProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/URPProjectSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,6 +24,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/IntData.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1
@@ -40,7 +51,7 @@
 }</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.0.41f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.2.6f2\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-projectPath C:\Users\fibbe\Documents\UVU\UVU-AGD-Portfolio\UnityProject -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="C:\Users\fibbe\Documents\UVU\UVU-AGD-Portfolio\UnityProject" />
       <option name="PASS_PARENT_ENVS" value="1" />
@@ -51,7 +62,7 @@
       <method v="2" />
     </configuration>
     <configuration name="Unit Tests (batch mode)" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.0.41f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.2.6f2\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath C:\Users\fibbe\Documents\UVU\UVU-AGD-Portfolio\UnityProject -testResults Logs/results.xml -logFile Logs/Editor.log -testPlatform EditMode -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="C:\Users\fibbe\Documents\UVU\UVU-AGD-Portfolio\UnityProject" />
       <option name="PASS_PARENT_ENVS" value="1" />
@@ -100,6 +111,8 @@
       <workItem from="1757913912552" duration="100000" />
       <workItem from="1759290893518" duration="402000" />
       <workItem from="1759292104121" duration="1674000" />
+      <workItem from="1759787570001" duration="2367000" />
+      <workItem from="1759807605010" duration="2578000" />
     </task>
     <servers />
   </component>
