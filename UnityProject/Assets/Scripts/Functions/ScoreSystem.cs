@@ -18,7 +18,9 @@ public class ScoreSystem : MonoBehaviour
     
     private void AddScore()
     {
+        Debug.Log("ScoreSystem: Adding 1 point");
         score.UpdateValue(1);
         onScoreChanged?.RaiseAction();
+        Debug.Log($"ScoreSystem: New score = {score.Value}");
     }
 }
