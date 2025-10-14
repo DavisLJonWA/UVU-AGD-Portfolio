@@ -1,0 +1,177 @@
+// =============================================
+// Calculator Sub-Functions for DAGV Assignment
+// =============================================
+
+// Helper function to convert float array to string for display
+global proc string arrayToString(float $array[]) {
+    string $result = "{";
+    for ($i = 0; $i < size($array); $i++) {
+        $result += string($array[$i]);
+        if ($i < size($array) - 1) {
+            $result += ", ";
+        }
+    }
+    $result += "}";
+    return $result;
+}
+
+// Sum (addition) of 2 or more float values
+global proc float calcSum(float $input[]) {
+    float $result = 0;
+    for ($i = 0; $i < size($input); $i++) {
+        $result += $input[$i];
+    }
+    return $result;
+}
+
+// Difference (subtraction) of 2 or more values
+global proc float calcDifference(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $result = $input[0];
+    for ($i = 1; $i < size($input); $i++) {
+        $result -= $input[$i];
+    }
+    return $result;
+}
+
+// Multiplication of 2 or more values
+global proc float calcMultiply(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $result = 1;
+    for ($i = 0; $i < size($input); $i++) {
+        $result *= $input[$i];
+    }
+    return $result;
+}
+
+// Division of 2 or more values
+global proc float calcDivide(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    // Check for division by zero
+    for ($i = 1; $i < size($input); $i++) {
+        if ($input[$i] == 0) {
+            error "Error: Division by zero is not allowed";
+            return 0;
+        }
+    }
+    
+    float $result = $input[0];
+    for ($i = 1; $i < size($input); $i++) {
+        $result /= $input[$i];
+    }
+    return $result;
+}
+
+// Power (x raised to power n)
+global proc float calcPower(float $input[]) {
+    if (size($input) < 2) {
+        error "Error: Power function requires at least 2 values (base and exponent)";
+        return 0;
+    }
+    
+    float $base = $input[0];
+    float $exponent = $input[1];
+    return pow($base, $exponent);
+}
+
+// Mean (or average)
+global proc float calcMean(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $sum = 0;
+    for ($i = 0; $i < size($input); $i++) {
+        $sum += $input[$i];
+    }
+    return $sum / size($input);
+}
+
+// Median
+global proc float calcMedian(float $input[]) {
+    int $size = size($input);
+    if ($size == 0) {
+        return 0;
+    }
+    
+    // Create a sorted copy of the array
+    float $sorted[] = $input;
+    
+    // Bubble sort implementation for MEL
+    for ($i = 0; $i < $size - 1; $i++) {
+        for ($j = 0; $j < $size - $i - 1; $j++) {
+            if ($sorted[$j] > $sorted[$j + 1]) {
+                // Swap elements
+                float $temp = $sorted[$j];
+                $sorted[$j] = $sorted[$j + 1];
+                $sorted[$j + 1] = $temp;
+            }
+        }
+    }
+    
+    // Calculate median
+    if ($size % 2 == 1) {
+        // Odd number of elements
+        return $sorted[$size / 2];
+    } else {
+        // Even number of elements
+        int $mid = $size / 2;
+        return ($sorted[$mid - 1] + $sorted[$mid]) / 2;
+    }
+}
+
+// =============================================
+// Test function to verify all operations work
+// =============================================
+global proc testCalculatorFunctions() {
+    print "Testing Calculator Functions:\n";
+    
+    // Test data
+    float $testNumbers1[] = {2.0, 3.0, 4.0};
+    float $testNumbers2[] = {10.0, 2.0, 1.0};
+    float $powerTest[] = {2.0, 3.0}; // 2^3
+    float $medianTest[] = {5.0, 1.0, 3.0, 2.0, 4.0};
+    
+    // Test Sum
+    float $sumResult = calcSum($testNumbers1);
+    string $testStr1 = arrayToString($testNumbers1);
+    print ("Sum of " + $testStr1 + " = " + $sumResult + "\n");
+    
+    // Test Difference
+    float $diffResult = calcDifference($testNumbers2);
+    string $testStr2 = arrayToString($testNumbers2);
+    print ("Difference of " + $testStr2 + " = " + $diffResult + "\n");
+    
+    // Test Multiplication
+    float $multResult = calcMultiply($testNumbers1);
+    print ("Multiplication of " + $testStr1 + " = " + $multResult + "\n");
+    
+    // Test Division
+    float $divResult = calcDivide($testNumbers2);
+    print ("Division of " + $testStr2 + " = " + $divResult + "\n");
+    
+    // Test Power
+    float $powerResult = calcPower($powerTest);
+    string $powerStr = arrayToString($powerTest);
+    print ("Power of " + $powerStr + " = " + $powerResult + "\n");
+    
+    // Test Mean
+    float $meanResult = calcMean($testNumbers1);
+    print ("Mean of " + $testStr1 + " = " + $meanResult + "\n");
+    
+    // Test Median
+    float $medianResult = calcMedian($medianTest);
+    string $medianStr = arrayToString($medianTest);
+    print ("Median of " + $medianStr + " = " + $medianResult + "\n");
+    
+    print "All functions tested successfully!\n";
+}

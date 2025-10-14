@@ -5,11 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c194b7f-d35c-41f1-b7b8-0ef4459cfed0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/ArenaCollector.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/ArenaCollector.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/ScoreSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/ScoreSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,7 +111,7 @@
       <workItem from="1759807605010" duration="2578000" />
       <workItem from="1760059960657" duration="393000" />
       <workItem from="1760060366566" duration="5225000" />
-      <workItem from="1760232658195" duration="3796000" />
+      <workItem from="1760232658195" duration="4391000" />
     </task>
     <servers />
   </component>
