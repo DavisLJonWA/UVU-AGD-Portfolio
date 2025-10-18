@@ -1,0 +1,173 @@
+// =======================================================
+// Main Calculator Function
+// =======================================================
+//test code
+//float $grades[] = {81.7 , 79.3 , 95.6, 65,2};
+//calculator($grades, "mean");
+//calculator($grades, "median");
+
+global proc float calculator(float $input[], string $operation)
+// Check Inputs
+{
+    if (size($input) == 0)
+    {
+        error "Error: Inputs cannot be empty";
+        return 0;
+    }
+
+    float $result = 0;
+    string $operationText = "";
+    string $output = "";
+
+    //check operations to perform
+
+    //Addition
+    if ($operation == "add" || $operation == "sum") 
+    {
+        $result = calcSum($input);
+        $operationText = "sum";
+        $output = buildOutputString($input, " + ", $result);
+    }
+    //Subtraction
+    else if ($operation == "subtract" || $operation == "difference") 
+    {
+        $result = calcDifference($input);
+        $operationText = "difference";
+        $output = buildOutputString($input, " - ", $result);
+    }
+    //Multiplication
+    else if ($operation == "multiply" || $operation == "multiplication") 
+    {
+        $result = calcMultiply($input);
+        $operationText = "Product";
+        $output = buildOutputString($input, " x ", $result);
+    }
+    //Division
+    else if ($operation == "divide" || $operation == "division") 
+    {
+        $result = calcDivide($input);
+        $operationText = "quotient";
+        $output = buildOutputString($input, " ÷ ", $result);
+    }
+    //Exponential
+    else if ($operation == "power" || $operation == "exponent") 
+    {
+        if (size($input) < 2)
+        {
+            error "Error: Need at least 2 inputs";
+            return 0;
+        }
+        $result = calcPower($input);
+        $operationText = "power";
+        $output = $input[0] + " ^ " + $input[1] + " = " + $result;
+    }
+    //Mean/Average
+    else if ($operation == "mean" || $operation == "average") 
+    {
+        $result = calcMean($input);
+        $operationText = "mean";
+        $output = "Mean = " + $result;
+    }
+    //Median
+    else if ($operation == "median") 
+    {
+        $result = calcMedian($input);
+        $operationText = "median";
+        $output = "Median = " + $result;
+    }
+    // Error
+    else 
+    {
+        error "Error: Unknown Operation, Please choose a valid operation";
+        return 0;
+    }
+    
+    print($output + "\n");
+    return $result;
+}
+
+// =============================================
+// Helper function to build formatted output strings
+// =============================================
+global proc string buildOutputString(float $input[], string $operator, float $result) {
+    string $output = "";
+    
+    for ($i = 0; $i < size($input); $i++) {
+        $output += string($input[$i]);
+        if ($i < size($input) - 1) {
+            $output += $operator;
+        }
+    }
+    
+    $output += " = " + string($result);
+    return $output;
+}
+
+// =============================================
+// Helper function to convert float array to string for display
+// =============================================
+global proc string arrayToString(float $array[]) {
+    string $result = "";
+    for ($i = 0; $i < size($array); $i++) {
+        $result += string($array[$i]);
+        if ($i < size($array) - 1) {
+            $result += ", ";
+        }
+    }
+    return $result;
+}
+
+// =============================================
+// Test the main calculator function
+// =============================================
+global proc testMainCalculator() {
+    print "=== Testing Main Calculator Function ===\n";
+    
+    // Test cases for each operation
+    float $numbers1[] = {3.0, 5.0, 8.0};
+    float $numbers2[] = {20.0, 4.0, 2.0};
+    float $numbers3[] = {2.0, 3.0};
+    float $numbers4[] = {1.0, 3.0, 5.0, 7.0, 9.0};
+    
+    // Test Addition
+    print "Testing Addition:\n";
+    float $addResult = calculator($numbers1, "add");
+    print "\n";
+    
+    // Test Subtraction
+    print "Testing Subtraction:\n";
+    float $subResult = calculator($numbers2, "subtract");
+    print "\n";
+    
+    // Test Multiplication
+    print "Testing Multiplication:\n";
+    float $multResult = calculator($numbers1, "multiply");
+    print "\n";
+    
+    // Test Division
+    print "Testing Division:\n";
+    float $divResult = calculator($numbers2, "divide");
+    print "\n";
+    
+    // Test Power
+    print "Testing Power:\n";
+    float $powerResult = calculator($numbers3, "power");
+    print "\n";
+    
+    // Test Mean
+    print "Testing Mean:\n";
+    float $meanResult = calculator($numbers1, "mean");
+    print "\n";
+    
+    // Test Median
+    print "Testing Median:\n";
+    float $medianResult = calculator($numbers4, "median");
+    print "\n";
+    
+    // Test error handling
+    print "Testing Error Handling:\n";
+    float $emptyArray[] = {};
+    calculator($emptyArray, "add");
+    
+    print "=== Main Calculator Test Complete ===\n";
+}
