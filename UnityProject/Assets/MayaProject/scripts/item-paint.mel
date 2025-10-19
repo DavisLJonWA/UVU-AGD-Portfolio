@@ -1,0 +1,660 @@
+// Global variables for our paint tool
+global string $gObjectPaintWindow;
+global string $gBrushSizeField;
+global string $gDensityField;
+global string $gMinScaleField;
+global string $gMaxScaleField;
+global string $gMaxRotationField;
+global string $gSinkAmountField;
+global string $gCanvasObject = "";
+global string $gCanvasObjectText;
+global string $gPaintObjectsParentLayout;
+
+// Global arrays for multiple paint objects
+global string $gPaintObjectsLayouts[];
+global string $gPaintObjectsFields[];
+global int $gPaintObjectCount = 0;
+
+// Function to remove element from string array
+global proc string[] removeArrayElement(string $array[], int $index) {
+    string $newArray[];
+    int $count = 0;
+    
+    for ($i = 0; $i < size($array); $i++) {
+        if ($i != $index) {
+            $newArray[$count] = $array[$i];
+            $count++;
+        }
+    }
+    
+    return $newArray;
+}
+
+// IMPROVED: Function to get surface height using raycasting for accurate topology
+global proc float getSurfaceHeightAtPoint(string $surface, float $x, float $z) {
+    // Get surface bounding box to determine ray start height
+    float $bb[] = `exactWorldBoundingBox $surface`;
+    float $surfaceTop = $bb[4];
+    float $surfaceBottom = $bb[1];
+    
+    // Start ray from well above the surface
+    float $rayStartY = $surfaceTop + 100.0;
+    float $rayEndY = $surfaceBottom - 10.0;
+    
+    // Create temporary locator for raycasting
+    string $tempLocator[] = `spaceLocator -p $x $rayStartY $z`;
+    string $locator = $tempLocator[0];
+    
+    float $surfaceHeight = $surfaceTop; // Default fallback
+    
+    // Perform raycast using Maya's built-in functions
+    string $hitInfo[] = `hitTest -closest $locator $surface`;
+    
+    if (size($hitInfo) > 0) {
+        // Parse the hit position from hitTest result
+        string $hitPointStr = $hitInfo[0];
+        string $components[] = stringToStringArray($hitPointStr, " ");
+        if (size($components) >= 3) {
+            $surfaceHeight = $components[1];
+        }
+    } else {
+        // Fallback: use mesh sampling if raycast fails
+        select $surface;
+        float $sampledHeight[] = `pointOnMesh -local -parameterU 0.5 -parameterV 0.5 -position`;
+        if (size($sampledHeight) >= 3) {
+            $surfaceHeight = $sampledHeight[1];
+        }
+    }
+    
+    // Clean up temporary locator
+    if (`objExists $locator`) {
+        delete $locator;
+    }
+    
+    return $surfaceHeight;
+}
+
+// IMPROVED: Function to lower a single object to the surface with height variation
+global proc float lowerSingleObjectToSurface(string $object, string $surface, float $sinkAmount, float $heightVariation) {
+    // Get object's current position
+    float $currentPos[] = `getAttr ($object + ".translate")`;
+    float $x = $currentPos[0];
+    float $z = $currentPos[2];
+    
+    // Get surface height at object's X,Z position
+    float $surfaceHeight = getSurfaceHeightAtPoint($surface, $x, $z);
+    
+    // Apply random height variation to prevent uniform heights
+    float $randomVariation = (rand(2.0) - 1.0) * $heightVariation;
+    float $adjustedSurfaceHeight = $surfaceHeight + $randomVariation;
+    
+    // Get object's bounding box
+    float $objBB[] = `exactWorldBoundingBox $object`;
+    float $objBottom = $objBB[1];
+    float $objCenter = ($objBB[1] + $objBB[4]) / 2;
+    
+    // Calculate how much to offset the object to place it on surface
+    float $offsetFromCenterToBottom = $objCenter - $objBottom;
+    float $targetY = $adjustedSurfaceHeight - $offsetFromCenterToBottom - $sinkAmount;
+    
+    // Move the object to the calculated position
+    move -absolute $x $targetY $z $object;
+    
+    print ("Lowered " + $object + " to Y: " + $targetY + " (surface: " + $surfaceHeight + ", variation: " + $randomVariation + ", sink: " + $sinkAmount + ")\n");
+    
+    return $targetY;
+}
+
+// IMPROVED: Function to place object high and lower it with variation
+global proc float dropObjectToSurface(string $object, string $surface, float $sinkAmount, float $heightVariation) {
+    // Get surface bounding box
+    float $surfaceBB[] = `exactWorldBoundingBox $surface`;
+    float $surfaceTop = $surfaceBB[4];
+    
+    // Get object's current position
+    float $currentPos[] = `getAttr ($object + ".translate")`;
+    float $x = $currentPos[0];
+    float $z = $currentPos[2];
+    
+    // Place object high above surface
+    float $highY = $surfaceTop + 50.0 + rand(30.0); // Add some randomness to drop height
+    move -absolute $x $highY $z $object;
+    
+    // Now lower it to the surface with height variation
+    float $finalY = lowerSingleObjectToSurface($object, $surface, $sinkAmount, $heightVariation);
+    
+    return $finalY;
+}
+
+// Function to get random position on surface
+global proc float[] getRandomSurfacePosition(string $surface, float $brushSize) {
+    float $bb[] = `exactWorldBoundingBox $surface`;
+    
+    // Calculate random position within the surface bounds
+    float $width = $bb[3] - $bb[0];
+    float $depth = $bb[5] - $bb[2];
+    
+    // Generate base random position
+    float $randX = $bb[0] + rand($width);
+    float $randZ = $bb[2] + rand($depth);
+    
+    // Apply brush size constraint
+    if ($brushSize < $width && $brushSize < $depth) {
+        $randX = $randX + (rand($brushSize) - $brushSize/2);
+        $randZ = $randZ + (rand($brushSize) - $brushSize/2);
+        
+        // Clamp to surface bounds
+        if ($randX < $bb[0]) $randX = $bb[0];
+        if ($randX > $bb[3]) $randX = $bb[3];
+        if ($randZ < $bb[2]) $randZ = $bb[2];
+        if ($randZ > $bb[5]) $randZ = $bb[5];
+    }
+    
+    return {$randX, $randZ};
+}
+
+// NEW: Function to run simulation after painting
+global proc runObjectSimulation(string $objects[], int $frames) {
+    if (size($objects) == 0) {
+        warning "No objects to simulate.";
+        return;
+    }
+    
+    print ("\n=== STARTING SIMULATION FOR " + size($objects) + " OBJECTS ===\n");
+    
+    // Enable dynamics and create passive rigid bodies
+    for ($i = 0; $i < size($objects); $i++) {
+        string $obj = $objects[$i];
+        if (`objExists $obj`) {
+            // Convert to passive rigid body for simulation
+            select $obj;
+            rigidBody -passive -name ($obj + "_rb");
+            print ("Created rigid body for: " + $obj + "\n");
+        }
+    }
+    
+    // Set playback range for simulation
+    float $currentTime = `currentTime -query`;
+    playbackOptions -min 1 -max $frames;
+    currentTime 1;
+    
+    // Run simulation
+    print ("Running simulation for " + $frames + " frames...\n");
+    
+    // Bake simulation
+    for ($frame = 1; $frame <= $frames; $frame++) {
+        currentTime $frame;
+        // Force dynamics evaluation
+        dgeval -time $frame;
+    }
+    
+    print ("Simulation completed!\n");
+    
+    // Return to original time
+    currentTime $currentTime;
+}
+
+// IMPROVED: Simple object paint tool with simulation
+global proc objectPaintTool() {
+    global string $gCanvasObject;
+    global string $gBrushSizeField;
+    global string $gDensityField;
+    global string $gMinScaleField;
+    global string $gMaxScaleField;
+    global string $gMaxRotationField;
+    global string $gSinkAmountField;
+    global string $gPaintObjectsFields[];
+    
+    // NEW: Height variation parameter
+    float $heightVariation = 3.0; // Controls how much objects vary in height
+    
+    // Check if we have a canvas object selected
+    if ($gCanvasObject == "") {
+        warning "No canvas object selected. Please select the surface you want to paint on.";
+        return;
+    }
+    
+    // Check if we have any paint objects
+    int $hasPaintObjects = 0;
+    for ($i = 0; $i < size($gPaintObjectsFields); $i++) {
+        if ($gPaintObjectsFields[$i] != "" && `objExists $gPaintObjectsFields[$i]`) {
+            $hasPaintObjects = 1;
+            break;
+        }
+    }
+    
+    if (!$hasPaintObjects) {
+        warning "No valid paint objects selected. Please add at least one object to paint.";
+        return;
+    }
+    
+    // Get tool settings from UI
+    float $brushSize = `floatField -q -value $gBrushSizeField`;
+    float $density = `floatField -q -value $gDensityField`;
+    float $minScale = `floatField -q -value $gMinScaleField`;
+    float $maxScale = `floatField -q -value $gMaxScaleField`;
+    float $maxRotation = `floatField -q -value $gMaxRotationField`;
+    float $sinkAmount = `floatField -q -value $gSinkAmountField`;
+    
+    // Calculate how many objects to spawn
+    int $numObjects = (int)($density * $brushSize);
+    if ($numObjects < 1) $numObjects = 1;
+    
+    print ("Painting " + $numObjects + " objects on " + $gCanvasObject + " with sink: " + $sinkAmount + ", height variation: " + $heightVariation + "\n");
+    
+    // Start undo chunk
+    undoInfo -openChunk;
+    
+    int $successfulSpawns = 0;
+    string $allSpawnedObjects[];
+    float $spawnedHeights[]; // Track heights for analysis
+    
+    // STEP 1: Create all objects first (without proper placement)
+    for ($i = 0; $i < $numObjects; $i++) {
+        // Get random position on the surface
+        float $position[] = getRandomSurfacePosition($gCanvasObject, $brushSize);
+        float $randX = $position[0];
+        float $randZ = $position[1];
+        
+        // Randomly select one of the paint objects
+        string $availableObjects[];
+        for ($j = 0; $j < size($gPaintObjectsFields); $j++) {
+            if ($gPaintObjectsFields[$j] != "" && `objExists $gPaintObjectsFields[$j]`) {
+                $availableObjects[size($availableObjects)] = $gPaintObjectsFields[$j];
+            }
+        }
+        
+        if (size($availableObjects) > 0) {
+            int $randomIndex = (int)rand(size($availableObjects));
+            string $selectedPaintObject = $availableObjects[$randomIndex];
+            
+            // Verify the object exists
+            if (!`objExists $selectedPaintObject`) {
+                warning ("Paint object '" + $selectedPaintObject + "' no longer exists. Skipping.");
+                continue;
+            }
+            
+            // Duplicate the selected paint object
+            string $newObj[] = `duplicate $selectedPaintObject`;
+            
+            if (size($newObj) > 0) {
+                // Apply random scale with more variation
+                float $scale = $minScale + (($maxScale - $minScale) * rand(1.0));
+                float $scaleX = $scale * (0.8 + rand(0.4)); // Different scale per axis
+                float $scaleY = $scale * (0.8 + rand(0.4));
+                float $scaleZ = $scale * (0.8 + rand(0.4));
+                scale $scaleX $scaleY $scaleZ $newObj[0];
+                
+                // Place object at random X,Z but HIGH above surface initially
+                float $surfaceBB[] = `exactWorldBoundingBox $gCanvasObject`;
+                float $highY = $surfaceBB[4] + 100.0 + rand(50.0); // Random drop height
+                move $randX $highY $randZ $newObj[0];
+                
+                // Random rotation with more variation
+                if ($maxRotation > 0) {
+                    float $rotX = rand($maxRotation * 2) - $maxRotation;
+                    float $rotY = rand(360.0);
+                    float $rotZ = rand($maxRotation * 2) - $maxRotation;
+                    rotate -r $rotX $rotY $rotZ $newObj[0];
+                }
+                
+                // Rename for organization
+                string $newName = `rename $newObj[0] ($selectedPaintObject + "_painted_" + $i)`;
+                $allSpawnedObjects[size($allSpawnedObjects)] = $newName;
+                $successfulSpawns++;
+                
+                print ("Created " + $newName + " at high position: " + $randX + ", " + $highY + ", " + $randZ + "\n");
+            }
+        }
+    }
+    
+    // STEP 2: Lower each object to the surface with height variation
+    print ("\n=== LOWERING OBJECTS TO SURFACE WITH HEIGHT VARIATION ===\n");
+    for ($i = 0; $i < size($allSpawnedObjects); $i++) {
+        string $object = $allSpawnedObjects[$i];
+        if (`objExists $object`) {
+            print ("Lowering object " + ($i + 1) + " of " + size($allSpawnedObjects) + ": " + $object + "\n");
+            float $finalY = dropObjectToSurface($object, $gCanvasObject, $sinkAmount, $heightVariation);
+            $spawnedHeights[size($spawnedHeights)] = $finalY;
+            print ("Object " + $object + " final Y position: " + $finalY + "\n");
+        }
+    }
+    
+    // NEW: Analyze height distribution
+    print ("\n=== HEIGHT DISTRIBUTION ANALYSIS ===\n");
+    if (size($spawnedHeights) > 0) {
+        float $minHeight = $spawnedHeights[0];
+        float $maxHeight = $spawnedHeights[0];
+        
+        for ($i = 1; $i < size($spawnedHeights); $i++) {
+            if ($spawnedHeights[$i] < $minHeight) $minHeight = $spawnedHeights[$i];
+            if ($spawnedHeights[$i] > $maxHeight) $maxHeight = $spawnedHeights[$i];
+        }
+        
+        float $heightRange = $maxHeight - $minHeight;
+        print ("Height range: " + $heightRange + " units (min: " + $minHeight + ", max: " + $maxHeight + ")\n");
+        
+        if ($heightRange < 1.0) {
+            warning "Warning: Objects are too close in height. Consider increasing height variation.";
+        } else {
+            print ("Good height variation achieved!\n");
+        }
+    }
+    
+    // NEW: Run simulation after painting
+    print ("\n=== STARTING POST-PAINTING SIMULATION ===\n");
+    runObjectSimulation($allSpawnedObjects, 60); // 60-frame simulation
+    
+    // Close undo chunk
+    undoInfo -closeChunk;
+    
+    print ("\n=== COMPLETED ===\n");
+    print ("Successfully painted and simulated " + $successfulSpawns + " objects\n");
+}
+
+// Function to select canvas object
+global proc selectCanvasObject() {
+    global string $gCanvasObject;
+    global string $gCanvasObjectText;
+    
+    string $selected[] = `ls -selection`;
+    if (size($selected) > 0) {
+        $gCanvasObject = $selected[0];
+        text -e -label ("Canvas: " + $gCanvasObject) $gCanvasObjectText;
+        print ("Object Paint: Canvas set to '" + $gCanvasObject + "'\n");
+    } else {
+        warning "Please select a canvas object first.";
+    }
+}
+
+// Function to add a new paint object slot
+global proc addPaintObjectSlot() {
+    global string $gPaintObjectsParentLayout;
+    global string $gPaintObjectsLayouts[];
+    global string $gPaintObjectsFields[];
+    global int $gPaintObjectCount;
+    
+    // Store current parent so we can return to it
+    string $currentParent = `setParent -query`;
+    
+    // Set parent to the paint objects layout
+    setParent $gPaintObjectsParentLayout;
+    
+    $gPaintObjectCount++;
+    int $index = $gPaintObjectCount - 1;
+    
+    // Create new layout for this paint object
+    string $newLayout = `rowLayout -numberOfColumns 3 -columnWidth3 120 50 150`;
+    $gPaintObjectsLayouts[$index] = $newLayout;
+    
+    // Create the text and buttons
+    string $label = `text -label ("Object " + $gPaintObjectCount + ":") -align "left" -width 100`;
+    string $selectButton = `button -label "Select" -command ("selectPaintObject(" + $index + ")") -width 45`;
+    string $objectField = `textField -editable false -text "" -width 140`;
+    $gPaintObjectsFields[$index] = "";
+    
+    // Return to original parent
+    setParent $currentParent;
+    
+    print ("Added paint object slot " + $gPaintObjectCount + " at correct location\n");
+}
+
+// Function to select a paint object
+global proc selectPaintObject(int $index) {
+    global string $gPaintObjectsFields[];
+    global string $gPaintObjectsLayouts[];
+    
+    string $selected[] = `ls -selection`;
+    if (size($selected) > 0) {
+        $gPaintObjectsFields[$index] = $selected[0];
+        
+        // Update the text field to show selected object
+        string $layout = $gPaintObjectsLayouts[$index];
+        string $children[] = `layout -query -childArray $layout`;
+        string $textField = $children[2];
+        textField -edit -text $selected[0] $textField;
+        
+        print ("Object Paint: Added '" + $selected[0] + "' as paint object " + ($index + 1) + "\n");
+    } else {
+        warning "Please select an object first.";
+    }
+}
+
+// Function to remove the last paint object slot
+global proc removePaintObjectSlot() {
+    global string $gPaintObjectsLayouts[];
+    global string $gPaintObjectsFields[];
+    global int $gPaintObjectCount;
+    
+    if ($gPaintObjectCount > 1) {
+        // Remove the last layout
+        string $lastLayout = $gPaintObjectsLayouts[$gPaintObjectCount - 1];
+        if (`layout -exists $lastLayout`) {
+            deleteUI $lastLayout;
+        }
+        
+        // Remove from arrays using our custom function
+        $gPaintObjectsLayouts = removeArrayElement($gPaintObjectsLayouts, $gPaintObjectCount - 1);
+        $gPaintObjectsFields = removeArrayElement($gPaintObjectsFields, $gPaintObjectCount - 1);
+        
+        $gPaintObjectCount--;
+        print ("Removed paint object slot. Total slots: " + $gPaintObjectCount + "\n");
+    } else {
+        // If only one slot, just clear it
+        $gPaintObjectsFields[0] = "";
+        string $layout = $gPaintObjectsLayouts[0];
+        string $children[] = `layout -query -childArray $layout`;
+        string $textField = $children[2];
+        textField -edit -text "" $textField;
+        print "Cleared paint object slot.\n";
+    }
+}
+
+// Create the Object Paint UI
+global proc createObjectPaintUI() {
+    global string $gObjectPaintWindow;
+    global string $gBrushSizeField;
+    global string $gDensityField;
+    global string $gMinScaleField;
+    global string $gMaxScaleField;
+    global string $gMaxRotationField;
+    global string $gSinkAmountField;
+    global string $gCanvasObjectText;
+    global string $gPaintObjectsParentLayout;
+    global string $gPaintObjectsLayouts[];
+    global string $gPaintObjectsFields[];
+    global int $gPaintObjectCount;
+    
+    // Delete window if it exists
+    if (`window -exists $gObjectPaintWindow`) {
+        deleteUI $gObjectPaintWindow;
+    }
+    
+    // Reset paint objects
+    $gPaintObjectsLayouts = {};
+    $gPaintObjectsFields = {};
+    $gPaintObjectCount = 0;
+    
+    // Create main window
+    $gObjectPaintWindow = `window -title "Advanced Object Paint Tool" 
+                                 -widthHeight 500 700 
+                                 -sizeable true
+                                 -maximizeButton true`;
+    
+    // Use a scroll layout for the main window to handle expansion
+    string $mainScrollLayout = `scrollLayout -horizontalScrollBarThickness 0 -verticalScrollBarThickness 16`;
+    string $mainColumn = `columnLayout -adjustableColumn true 
+                                      -rowSpacing 10 
+                                      -columnAttach "both" 5`;
+    
+    // Title
+    text -label "ADVANCED OBJECT PAINT TOOL" -align "center" -font "boldLabelFont" -height 30;
+    
+    // Instructions - collapsible
+    string $instructionsFrame = `frameLayout -label "Instructions" 
+                                            -collapsable true 
+                                            -collapse true
+                                            -marginWidth 10 
+                                            -marginHeight 10
+                                            -width 480`;
+    columnLayout -adjustableColumn true;
+    text -label "1. Select canvas object (surface to paint on)" -align "left";
+    text -label "2. Click 'Select Canvas'" -align "left"; 
+    text -label "3. Add paint objects using + button" -align "left";
+    text -label "4. Select each paint object and click its 'Select' button" -align "left";
+    text -label "5. Adjust settings and click 'Paint Objects'" -align "left";
+    text -label "6. Objects will be lowered with height variation and simulation" -align "left";
+    setParent..;
+    setParent..;
+    
+    // Canvas object selection
+    string $canvasFrame = `frameLayout -label "Canvas Object" 
+                                      -collapsable false 
+                                      -marginWidth 10 
+                                      -marginHeight 10
+                                      -width 480`;
+    columnLayout -adjustableColumn true;
+    $gCanvasObjectText = `text -label "No canvas selected" -align "center" -height 30`;
+    button -label "Select Canvas Object" -command "selectCanvasObject()" -height 30;
+    setParent..;
+    setParent..;
+    
+    // Paint objects selection
+    string $paintObjectsFrame = `frameLayout -label "Paint Objects" 
+                                           -collapsable true 
+                                           -collapse false
+                                           -marginWidth 10 
+                                           -marginHeight 10
+                                           -width 480`;
+    
+    // Main column for the paint objects frame
+    string $paintObjectsColumn = `columnLayout -adjustableColumn true`;
+    
+    // Add/Remove buttons for paint objects
+    rowLayout -numberOfColumns 3 -columnWidth3 160 80 80 -columnAlign3 "left" "center" "center";
+    text -label "Add or Remove Paints:" -align "left" -width 150;
+    button -label "+" -command "addPaintObjectSlot()" -width 35;
+    button -label "-" -command "removePaintObjectSlot()" -width 35;
+    setParent..;
+    
+    // Separator
+    text -label "" -height 5;
+    
+    // Parent layout for dynamic paint object slots
+    $gPaintObjectsParentLayout = `columnLayout -adjustableColumn true
+                                              -rowSpacing 5`;
+    
+    setParent..;
+    setParent..;
+    
+    // Add the first paint object slot automatically
+    addPaintObjectSlot();
+    
+    // Brush settings - COLLAPSIBLE
+    string $brushFrame = `frameLayout -label "Brush Settings" 
+                                     -collapsable true 
+                                     -collapse false
+                                     -marginWidth 10 
+                                     -marginHeight 10
+                                     -width 480`;
+    gridLayout -numberOfColumns 2 -cellWidthHeight 230 35;
+    
+    text -label "Brush Size:" -align "left";
+    $gBrushSizeField = `floatField -minValue 0.1 -maxValue 100.0 -value 10.0 -width 200`;
+    
+    text -label "Density:" -align "left";
+    $gDensityField = `floatField -minValue 0.1 -maxValue 10.0 -value 2.0 -width 200`;
+    
+    setParent..;
+    setParent..;
+    
+    // Object settings - COLLAPSIBLE
+    string $objectFrame = `frameLayout -label "Object Settings" 
+                                      -collapsable true 
+                                      -collapse false
+                                      -marginWidth 10 
+                                      -marginHeight 10
+                                      -width 480`;
+    gridLayout -numberOfColumns 2 -cellWidthHeight 230 35;
+    
+    text -label "Min Scale:" -align "left";
+    $gMinScaleField = `floatField -minValue 0.01 -maxValue 10.0 -value 0.8 -width 200`;
+    
+    text -label "Max Scale:" -align "left";
+    $gMaxScaleField = `floatField -minValue 0.01 -maxValue 10.0 -value 1.2 -width 200`;
+    
+    text -label "Max Rotation:" -align "left";
+    $gMaxRotationField = `floatField -minValue 0.0 -maxValue 180.0 -value 15.0 -width 200`;
+    
+    // Object Paint Sink setting
+    text -label "Object Paint Sink:" -align "left";
+    $gSinkAmountField = `floatField -minValue 0.0 -maxValue 10.0 -value 0.5 -width 200`;
+    
+    setParent..;
+    setParent..;
+    
+    // Action buttons
+    string $actionFrame = `frameLayout -label "Actions" 
+                                      -collapsable false 
+                                      -marginWidth 10 
+                                      -marginHeight 10
+                                      -width 480`;
+    columnLayout -adjustableColumn true;
+    
+    button -label "PAINT OBJECTS" -command "objectPaintTool()" -height 40 -backgroundColor 0.2 0.6 0.2;
+    
+    // Add some spacing
+    text -label "" -height 15;
+    
+    // Button row for utilities
+    rowLayout -numberOfColumns 2 -columnWidth2 235 235 -columnAlign2 "center" "center";
+    button -label "Create Shelf Button" -command "createSimpleShelfButton()" -height 30;
+    button -label "Clear All" -command "clearAllSelections()" -height 30;
+    setParent..;
+    
+    setParent..;
+    setParent..;
+    
+    showWindow $gObjectPaintWindow;
+}
+
+// Function to clear all selections
+global proc clearAllSelections() {
+    global string $gCanvasObject;
+    global string $gCanvasObjectText;
+    global string $gPaintObjectsFields[];
+    global string $gPaintObjectsLayouts[];
+    global int $gPaintObjectCount;
+    
+    $gCanvasObject = "";
+    text -e -label "No canvas selected" $gCanvasObjectText;
+    
+    // Clear all paint object fields
+    for ($i = 0; $i < size($gPaintObjectsFields); $i++) {
+        $gPaintObjectsFields[$i] = "";
+        if ($i < size($gPaintObjectsLayouts) && $gPaintObjectsLayouts[$i] != "") {
+            string $layout = $gPaintObjectsLayouts[$i];
+            if (`layout -exists $layout`) {
+                string $children[] = `layout -query -childArray $layout`;
+                if (size($children) >= 3) {
+                    string $textField = $children[2];
+                    textField -edit -text "" $textField;
+                }
+            }
+        }
+    }
+    
+    print "Cleared all selections.\n";
+}
+
+// Much simpler shelf button creation
+global proc createSimpleShelfButton() {
+    // Just create a shelf button on the current shelf - Maya will handle the rest
+    shelfButton -annotation "Object Paint Tool" -label "Paint" -command "objectPaintTool()";
+    print "Object Paint button added to current shelf!\n";
+}
+
+// Initialize the tool
+createObjectPaintUI();
+print "Advanced Object Paint Tool initialized!\n";
+print "Features: Improved surface detection, Height variation, Post-painting simulation!\n";

@@ -1,0 +1,198 @@
+// Global variables for UI controls
+global string $gDuplicateRandomizerWindow;
+global string $gNumDuplicatesField;
+global string $gMinXField;
+global string $gMaxXField;
+global string $gMinYField;
+global string $gMaxYField;
+global string $gMinZField;
+global string $gMaxZField;
+
+// Function to duplicate and randomly disperse objects
+global proc duplicateAndRandomize(int $numDuplicates, float $minX, float $maxX, 
+                                float $minY, float $maxY, float $minZ, float $maxZ)
+{
+    // Get selected objects
+    string $selectedObjects[] = `ls -selection`;
+    
+    // Check if any objects are selected
+    if (size($selectedObjects) == 0) {
+        error "No objects selected. Please select at least one object.";
+        return;
+    }
+    
+    // Validate input ranges
+    if ($minX >= $maxX || $minY >= $maxY || $minZ >= $maxZ) {
+        error "Invalid range: Minimum values must be less than maximum values.";
+        return;
+    }
+    
+    if ($numDuplicates <= 0) {
+        error "Number of duplicates must be greater than 0.";
+        return;
+    }
+    
+    // Process each selected object
+    for ($i = 0; $i < size($selectedObjects); $i++) {
+        string $obj = $selectedObjects[$i];
+        // Duplicate the object specified number of times
+        for ($j = 0; $j < $numDuplicates; $j++) {
+            // Duplicate the object
+            string $duplicate[] = `duplicate $obj`;
+            string $newObj = $duplicate[0];
+            
+            // Generate random position within specified ranges
+            float $randX = $minX + (($maxX - $minX) * rand(1.0));
+            float $randY = $minY + (($maxY - $minY) * rand(1.0));
+            float $randZ = $minZ + (($maxZ - $minZ) * rand(1.0));
+            
+            // Move the duplicated object to random position
+            move -relative $randX $randY $randZ $newObj;
+            
+            // Print confirmation (optional)
+            print ("Duplicated " + $obj + " as " + $newObj + " at position: " + 
+                   $randX + ", " + $randY + ", " + $randZ + "\n");
+        }
+    }
+    
+    // Selection feedback
+    print ("Successfully created " + $numDuplicates + " duplicates for each of " + 
+           size($selectedObjects) + " selected objects.\n");
+}
+
+// Function to execute duplication from UI
+global proc executeDuplicationFromUI()
+{
+    // Declare we're using the global variables
+    global string $gNumDuplicatesField;
+    global string $gMinXField;
+    global string $gMaxXField;
+    global string $gMinYField;
+    global string $gMaxYField;
+    global string $gMinZField;
+    global string $gMaxZField;
+    
+    // Get values from UI fields
+    int $numDuplicates = `intField -query -value $gNumDuplicatesField`;
+    float $minX = `floatField -query -value $gMinXField`;
+    float $maxX = `floatField -query -value $gMaxXField`;
+    float $minY = `floatField -query -value $gMinYField`;
+    float $maxY = `floatField -query -value $gMaxYField`;
+    float $minZ = `floatField -query -value $gMinZField`;
+    float $maxZ = `floatField -query -value $gMaxZField`;
+    
+    // Call the main function with UI values
+    duplicateAndRandomize($numDuplicates, $minX, $maxX, $minY, $maxY, $minZ, $maxZ);
+}
+
+// Function to create the UI
+global proc createDuplicateRandomizerUI()
+{
+    // Declare we're using the global window variable
+    global string $gDuplicateRandomizerWindow;
+    global string $gNumDuplicatesField;
+    global string $gMinXField;
+    global string $gMaxXField;
+    global string $gMinYField;
+    global string $gMaxYField;
+    global string $gMinZField;
+    global string $gMaxZField;
+    
+    // Delete window if it already exists
+    if (`window -exists $gDuplicateRandomizerWindow`) {
+        deleteUI $gDuplicateRandomizerWindow;
+    }
+    
+    // Create main window
+    $gDuplicateRandomizerWindow = `window -title "Object Duplicator & Randomizer" 
+                                        -widthHeight 300 400 
+                                        -sizeable true`;
+    
+    // Create main layout
+    string $mainLayout = `scrollLayout`;
+    string $form = `formLayout`;
+    
+    // Create UI elements
+    string $titleText = `text -label "Object Duplicator & Randomizer" 
+                             -align "center" 
+                             -font "boldLabelFont"`;
+    
+    string $numDupText = `text -label "Number of Duplicates:" -align "left"`;
+    $gNumDuplicatesField = `intField -minValue 1 -value 5`;
+    
+    string $rangeText = `text -label "Position Ranges:" -align "left" -font "boldLabelFont"`;
+    
+    string $xRangeText = `text -label "X Axis Range:" -align "left"`;
+    $gMinXField = `floatField -value -10.0`;
+    $gMaxXField = `floatField -value 10.0`;
+    
+    string $yRangeText = `text -label "Y Axis Range:" -align "left"`;
+    $gMinYField = `floatField -value -10.0`;
+    $gMaxYField = `floatField -value 10.0`;
+    
+    string $zRangeText = `text -label "Z Axis Range:" -align "left"`;
+    $gMinZField = `floatField -value -10.0`;
+    $gMaxZField = `floatField -value 10.0`;
+    
+    string $executeButton = `button -label "Duplicate & Randomize!" 
+                                   -command "executeDuplicationFromUI()" 
+                                   -height 40`;
+    
+    string $helpText = `text -label "Select objects and click the button to create randomized duplicates." 
+                            -align "center"`;
+    
+    // Form layout adjustments
+    formLayout -edit
+        -attachForm $titleText "top" 10
+        -attachForm $titleText "left" 5
+        -attachForm $titleText "right" 5
+        
+        -attachForm $numDupText "left" 10
+        -attachControl $numDupText "top" 20 $titleText
+        -attachControl $gNumDuplicatesField "left" 5 $numDupText
+        -attachControl $gNumDuplicatesField "top" 20 $titleText
+        -attachForm $gNumDuplicatesField "right" 10
+        
+        -attachForm $rangeText "left" 10
+        -attachControl $rangeText "top" 20 $numDupText
+        
+        -attachForm $xRangeText "left" 20
+        -attachControl $xRangeText "top" 10 $rangeText
+        -attachControl $gMinXField "left" 5 $xRangeText
+        -attachControl $gMinXField "top" 10 $rangeText
+        -attachControl $gMaxXField "left" 5 $gMinXField
+        -attachControl $gMaxXField "top" 10 $rangeText
+        -attachForm $gMaxXField "right" 10
+        
+        -attachForm $yRangeText "left" 20
+        -attachControl $yRangeText "top" 10 $xRangeText
+        -attachControl $gMinYField "left" 5 $yRangeText
+        -attachControl $gMinYField "top" 10 $xRangeText
+        -attachControl $gMaxYField "left" 5 $gMinYField
+        -attachControl $gMaxYField "top" 10 $xRangeText
+        -attachForm $gMaxYField "right" 10
+        
+        -attachForm $zRangeText "left" 20
+        -attachControl $zRangeText "top" 10 $yRangeText
+        -attachControl $gMinZField "left" 5 $zRangeText
+        -attachControl $gMinZField "top" 10 $yRangeText
+        -attachControl $gMaxZField "left" 5 $gMinZField
+        -attachControl $gMaxZField "top" 10 $yRangeText
+        -attachForm $gMaxZField "right" 10
+        
+        -attachForm $executeButton "left" 10
+        -attachForm $executeButton "right" 10
+        -attachControl $executeButton "top" 20 $zRangeText
+        
+        -attachForm $helpText "left" 5
+        -attachForm $helpText "right" 5
+        -attachControl $helpText "top" 10 $executeButton
+        -attachForm $helpText "bottom" 10
+    $form;
+    
+    // Show the window
+    showWindow $gDuplicateRandomizerWindow;
+}
+
+// Main execution call - run this to start the tool
+createDuplicateRandomizerUI();
