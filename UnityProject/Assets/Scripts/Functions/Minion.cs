@@ -33,9 +33,9 @@ public class Minion : MonoBehaviour
         if (agent != null)
         {
             agent.speed = moveSpeed;
-            agent.acceleration = 8f;
+            agent.acceleration = 1000f;
             agent.angularSpeed = 360f;
-            agent.stoppingDistance = 0.5f;
+            agent.stoppingDistance = 10f;
         }
 
         // Create move marker
