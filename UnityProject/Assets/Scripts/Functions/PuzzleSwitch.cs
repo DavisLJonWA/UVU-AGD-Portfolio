@@ -9,43 +9,65 @@ public class PuzzleSwitch : MonoBehaviour
     
     [Header("Visual Feedback")]
     [SerializeField] private Renderer switchRenderer;
-    [SerializeField] private Material unpressedMaterial;
-    [SerializeField] private Material pressedMaterial;
-    [SerializeField] private Light switchLight;
     [SerializeField] private Color unpressedColor = Color.red;
     [SerializeField] private Color pressedColor = Color.green;
+    [SerializeField] private bool autoFindRenderer = true;
     
     [Header("Audio")]
     [SerializeField] private AudioClip pressSound;
     [SerializeField] private AudioClip releaseSound;
     
     private AudioSource audioSource;
+    private Material switchMaterial;
+    private bool visualsInitialized = false;
 
     void Start()
+    {
+        InitializeSwitch();
+    }
+
+    void InitializeSwitch()
     {
         // Get or add AudioSource
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.spatialBlend = 1f; // 3D sound
+            audioSource.spatialBlend = 1f;
             audioSource.volume = 0.7f;
         }
-        
+
+        // Find the renderer if not assigned
+        if (switchRenderer == null && autoFindRenderer)
+        {
+            switchRenderer = GetComponent<Renderer>();
+            if (switchRenderer == null)
+            {
+                switchRenderer = GetComponentInChildren<Renderer>();
+            }
+        }
+
+        // Initialize visuals
         InitializeVisuals();
     }
 
     void InitializeVisuals()
     {
-        // Set initial visual state
-        if (switchRenderer != null && unpressedMaterial != null)
+        if (switchRenderer != null)
         {
-            switchRenderer.material = unpressedMaterial;
+            // Get the material (create instance if needed)
+            switchMaterial = switchRenderer.material;
+            
+            // Set initial color
+            switchMaterial.color = unpressedColor;
+            
+            visualsInitialized = true;
+            Debug.Log($"Switch {gameObject.name} visuals initialized with renderer: {switchRenderer.gameObject.name}");
         }
-        
-        if (switchLight != null)
+        else
         {
-            switchLight.color = unpressedColor;
+            Debug.LogWarning($"Switch {gameObject.name} has no Renderer component! Visual feedback will not work.");
+            visualsInitialized = false;
         }
     }
 
@@ -73,13 +95,14 @@ public class PuzzleSwitch : MonoBehaviour
         
         isPressed = true;
         
-        // Raise the switch pressed event using your GameAction system
+        // Raise the switch pressed event
         if (onSwitchPressed != null)
         {
             onSwitchPressed.RaiseNoArgs?.Invoke();
+            Debug.Log($"Switch {gameObject.name} pressed! Raising event.");
         }
         
-        // Visual feedback
+        // Update visuals
         UpdateVisuals();
         
         // Audio feedback
@@ -87,8 +110,6 @@ public class PuzzleSwitch : MonoBehaviour
         {
             audioSource.PlayOneShot(pressSound);
         }
-        
-        Debug.Log($"Switch {gameObject.name} pressed!");
     }
 
     public void ReleaseSwitch()
@@ -97,7 +118,7 @@ public class PuzzleSwitch : MonoBehaviour
         
         isPressed = false;
         
-        // Visual feedback
+        // Update visuals
         UpdateVisuals();
         
         // Audio feedback
@@ -109,18 +130,10 @@ public class PuzzleSwitch : MonoBehaviour
 
     void UpdateVisuals()
     {
-        // Update material
-        if (switchRenderer != null)
-        {
-            switchRenderer.material = isPressed ? pressedMaterial : unpressedMaterial;
-        }
+        if (!visualsInitialized || switchMaterial == null) return;
         
-        // Update light
-        if (switchLight != null)
-        {
-            switchLight.color = isPressed ? pressedColor : unpressedColor;
-            switchLight.intensity = isPressed ? 2f : 1f;
-        }
+        switchMaterial.color = isPressed ? pressedColor : unpressedColor;
+        Debug.Log($"Switch {gameObject.name} color updated to: {(isPressed ? pressedColor : unpressedColor)}");
     }
 
     // Public method to reset switch
@@ -128,5 +141,58 @@ public class PuzzleSwitch : MonoBehaviour
     {
         isPressed = false;
         UpdateVisuals();
+    }
+
+    // Debug and testing methods
+    [ContextMenu("Force Press Switch")]
+    public void ForcePressSwitch()
+    {
+        PressSwitch();
+    }
+
+    [ContextMenu("Force Release Switch")]
+    public void ForceReleaseSwitch()
+    {
+        ReleaseSwitch();
+    }
+
+    [ContextMenu("Toggle Switch")]
+    public void ToggleSwitch()
+    {
+        if (isPressed)
+            ReleaseSwitch();
+        else
+            PressSwitch();
+    }
+
+    [ContextMenu("Find Renderer")]
+    public void FindRenderer()
+    {
+        switchRenderer = GetComponent<Renderer>();
+        if (switchRenderer == null)
+        {
+            switchRenderer = GetComponentInChildren<Renderer>();
+        }
+        
+        if (switchRenderer != null)
+        {
+            Debug.Log($"Found renderer: {switchRenderer.gameObject.name}");
+            InitializeVisuals();
+        }
+        else
+        {
+            Debug.LogError($"No renderer found on {gameObject.name} or its children!");
+        }
+    }
+
+    // Getters
+    public bool IsPressed()
+    {
+        return isPressed;
+    }
+
+    public Renderer GetSwitchRenderer()
+    {
+        return switchRenderer;
     }
 }

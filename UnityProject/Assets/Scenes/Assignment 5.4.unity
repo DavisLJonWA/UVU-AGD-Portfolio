@@ -2291,8 +2291,9 @@ GameObject:
   - component: {fileID: 322876687}
   - component: {fileID: 322876686}
   - component: {fileID: 322876685}
-  - component: {fileID: 322876684}
   - component: {fileID: 322876689}
+  - component: {fileID: 322876691}
+  - component: {fileID: 322876692}
   m_Layer: 0
   m_Name: Puzzle Trigger
   m_TagString: Untagged
@@ -2315,29 +2316,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 509625444}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &322876684
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 322876682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c5c920495cfe4740a2ff9136cdfea19, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PuzzleSwitch
-  onSwitchPressed: {fileID: 11400000, guid: 78883c0ea99bfae43bb5aefc2f578468, type: 2}
-  canBePressedMultipleTimes: 0
-  isPressed: 0
-  switchRenderer: {fileID: 0}
-  unpressedMaterial: {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
-  pressedMaterial: {fileID: 2100000, guid: ff7da9dc9bb21c84c9782188d86001a9, type: 2}
-  switchLight: {fileID: 0}
-  unpressedColor: {r: 1, g: 0, b: 0, a: 1}
-  pressedColor: {r: 0, g: 1, b: 0, a: 1}
-  pressSound: {fileID: 0}
-  releaseSound: {fileID: 0}
 --- !u!114 &322876685
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2407,7 +2385,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
+  - {fileID: 2100000, guid: 8ee3c586d3554ab4290f0d0243230fc3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2470,6 +2448,40 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 0}
   m_BuildHeightMesh: 0
+--- !u!114 &322876691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 322876682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0588c46dc2b6890439fe5a10d3c291b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwitchDebugger
+  logSwitchStates: 1
+--- !u!114 &322876692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 322876682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c5c920495cfe4740a2ff9136cdfea19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleSwitch
+  onSwitchPressed: {fileID: 11400000, guid: 78883c0ea99bfae43bb5aefc2f578468, type: 2}
+  canBePressedMultipleTimes: 0
+  isPressed: 0
+  switchRenderer: {fileID: 0}
+  unpressedColor: {r: 1, g: 0, b: 0, a: 1}
+  pressedColor: {r: 0, g: 1, b: 0, a: 1}
+  autoFindRenderer: 1
+  pressSound: {fileID: 0}
+  releaseSound: {fileID: 0}
 --- !u!1 &346449977
 GameObject:
   m_ObjectHideFlags: 0
@@ -4974,11 +4986,9 @@ MonoBehaviour:
   canBePressedMultipleTimes: 0
   isPressed: 0
   switchRenderer: {fileID: 0}
-  unpressedMaterial: {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
-  pressedMaterial: {fileID: 2100000, guid: ff7da9dc9bb21c84c9782188d86001a9, type: 2}
-  switchLight: {fileID: 0}
   unpressedColor: {r: 1, g: 0, b: 0, a: 1}
   pressedColor: {r: 0, g: 1, b: 0, a: 1}
+  autoFindRenderer: 1
   pressSound: {fileID: 0}
   releaseSound: {fileID: 0}
 --- !u!114 &723033169
@@ -5050,7 +5060,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
+  - {fileID: 2100000, guid: 8ee3c586d3554ab4290f0d0243230fc3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5621,11 +5631,9 @@ MonoBehaviour:
   canBePressedMultipleTimes: 0
   isPressed: 0
   switchRenderer: {fileID: 0}
-  unpressedMaterial: {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
-  pressedMaterial: {fileID: 2100000, guid: ff7da9dc9bb21c84c9782188d86001a9, type: 2}
-  switchLight: {fileID: 0}
   unpressedColor: {r: 1, g: 0, b: 0, a: 1}
   pressedColor: {r: 0, g: 1, b: 0, a: 1}
+  autoFindRenderer: 1
   pressSound: {fileID: 0}
   releaseSound: {fileID: 0}
 --- !u!114 &805769030
@@ -5697,7 +5705,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d84b4857d47378b44bb59771b65f469e, type: 2}
+  - {fileID: 2100000, guid: 8ee3c586d3554ab4290f0d0243230fc3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

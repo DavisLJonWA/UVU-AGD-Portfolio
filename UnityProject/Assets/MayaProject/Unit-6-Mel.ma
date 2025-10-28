@@ -1,6 +1,6 @@
 //Maya ASCII 2025ff03 scene
 //Name: Unit-6-Mel.ma
-//Last modified: Sat, Oct 18, 2025 01:54:17 PM
+//Last modified: Sun, Oct 19, 2025 09:26:00 PM
 //Codeset: 1252
 requires maya "2025ff03";
 requires -nodeType "aiOptions" -nodeType "aiAOVDriver" -nodeType "aiAOVFilter" -nodeType "aiImagerDenoiserOidn"
@@ -11,17 +11,17 @@ fileInfo "product" "Maya 2025";
 fileInfo "version" "2025";
 fileInfo "cutIdentifier" "202409190603-cbdc5a7e54";
 fileInfo "osv" "Windows 11 Home v2009 (Build: 26200)";
-fileInfo "UUID" "58D5879C-43FA-1763-F0B7-94BE7C211E1B";
+fileInfo "UUID" "3B8621D8-4C1B-0D62-DB76-11A5526E523D";
 createNode transform -s -n "persp";
 	rename -uid "37A7B386-43E2-52AD-DB77-2299A8CCC907";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 28 21 28 ;
-	setAttr ".r" -type "double3" -27.938352729602379 44.999999999999972 -5.172681101354183e-14 ;
+	setAttr ".t" -type "double3" 442.00593444797494 -34.097862352718735 -56.104056342772296 ;
+	setAttr ".r" -type "double3" 13.461647270378394 466.19999999992154 0 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "ED1AD90B-46C8-AC5F-C272-3E9662433522";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
-	setAttr ".coi" 44.82186966202994;
+	setAttr ".coi" 532.14871328750155;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
@@ -76,6 +76,72 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
 	setAttr ".ai_translator" -type "string" "orthographic";
+createNode transform -n "pPlane1";
+	rename -uid "A7B902F3-43A9-BACC-BCE2-2E9D4B87B4F8";
+	setAttr ".t" -type "double3" 0 9.8655510679582434 0 ;
+	setAttr ".s" -type "double3" 97.175307947208879 97.175307947208879 97.175307947208879 ;
+createNode mesh -n "pPlaneShape1" -p "pPlane1";
+	rename -uid "9E807842-4144-CB7E-6A65-918D3B316FC4";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 121 ".pt[0:120]" -type "float3"  0 0.10152768 0 0 0.096533425 
+		0 0 0.078676701 0 0 0.049740691 0 0 0.013400037 0 0 -0.025665035 0 0 -0.062391594 
+		0 0 -0.092082113 0 0 -0.11112756 0 0 -0.12059952 0 0 -0.12387212 0 0 0.10000373 0 
+		0 0.094944365 0 0 0.076867677 0 0 0.047887519 0 0 0.012570303 0 0 -0.025410041 0 
+		0 -0.061079491 0 0 -0.089824915 0 0 -0.10808349 0 0 -0.117385 0 0 -0.12059952 0 0 
+		0.10184488 0 0 0.096877389 0 0 0.078735121 0 0 0.049223542 0 0 0.012905032 0 0 -0.024569234 
+		0 0 -0.057165585 0 0 -0.083163224 0 0 -0.099282503 0 0 -0.10808349 0 0 -0.11112756 
+		0 0 0.10777455 0 0 0.10301859 0 0 0.085835241 0 0 0.056907624 0 0 0.020693395 0 0 
+		-0.01697512 0 0 -0.049784824 0 0 -0.073167041 0 0 -0.087686956 0 0 -0.09675587 0 
+		0 -0.099937215 0 0 0.11784969 0 0 0.11288575 0 0 0.097363494 0 0 0.070075952 0 0 
+		0.035125989 0 0 -0.0021612698 0 0 -0.037079826 0 0 -0.063073799 0 0 -0.077995554 
+		0 0 -0.0873717 0 0 -0.090664744 0 0 0.13192832 0 0 0.1268464 0 0 0.11233351 0 0 0.087393664 
+		0 0 0.054260504 0 0 0.015874224 0 0 -0.021271762 0 0 -0.050754678 0 0 -0.070918277 
+		0 0 -0.080532871 0 0 -0.083914369 0 0 0.14976226 0 0 0.14461185 0 0 0.12986441 0 
+		0 0.10719863 0 0 0.074732728 0 0 0.035443038 0 0 -0.0038011805 0 0 -0.038611017 0 
+		0 -0.06401626 0 0 -0.07632491 0 0 -0.079750597 0 0 0.17054872 0 0 0.16540325 0 0 
+		0.15043026 0 0 0.12726656 0 0 0.094812609 0 0 0.054422274 0 0 0.011177676 0 0 -0.028335864 
+		0 0 -0.058287453 0 0 -0.074466772 0 0 -0.077869646 0 0 0.19257513 0 0 0.18729992 
+		0 0 0.17204849 0 0 0.14693122 0 0 0.1106599 0 0 0.067408927 0 0 0.021262385 0 0 -0.021403877 
+		0 0 -0.054539964 0 0 -0.073586695 0 0 -0.07780236 0 0 0.20898925 0 0 0.20341863 0 
+		0 0.18729992 0 0 0.15993248 0 0 0.12057248 0 0 0.073685177 0 0 0.025145184 0 0 -0.018908009 
+		0 0 -0.05357695 0 0 -0.074134335 0 0 -0.079065345 0 0 0.21466041 0 0 0.20898925 0 
+		0 0.19257513 0 0 0.16445126 0 0 0.12399074 0 0 0.075854212 0 0 0.025989451 0 0 -0.019348498 
+		0 0 -0.054634206 0 0 -0.075595036 0 0 -0.08075811 0;
+createNode transform -n "pCube1";
+	rename -uid "3CF426B5-4F5A-6691-DD8E-ABBA00AE0FA1";
+	setAttr ".t" -type "double3" -24.04377934541462 22.645113440091357 58.465253219213388 ;
+	setAttr ".s" -type "double3" 2.5362363316195715 2.5362363316195715 2.5362363316195715 ;
+createNode mesh -n "pCubeShape1" -p "pCube1";
+	rename -uid "627B5E03-4C02-B00F-D4BC-A1AF343DCCE2";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+createNode transform -n "pSphere1";
+	rename -uid "FEA3C405-4270-715A-B4A9-C59EEF29A707";
+	setAttr ".t" -type "double3" -19.750644295467893 22.018462445468373 64.87087249470477 ;
+	setAttr ".s" -type "double3" 1.8332571290672213 1.8332571290672213 1.8332571290672213 ;
+createNode mesh -n "pSphereShape1" -p "pSphere1";
+	rename -uid "ACE19767-4958-0E89-189A-68984297962A";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "B11CC5B1-4836-CD2D-2533-D9B71FE21B2B";
 	setAttr -s 2 ".lnk";
@@ -156,6 +222,16 @@ createNode aiAOVDriver -s -n "defaultArnoldDisplayDriver";
 	setAttr ".output_mode" 0;
 createNode aiImagerDenoiserOidn -s -n "defaultArnoldDenoiser";
 	rename -uid "9DD53322-43E8-4F42-E063-0BBAFC4BDBC5";
+createNode polyPlane -n "polyPlane1";
+	rename -uid "B2E68021-454B-0859-BE1E-04AD95A9EA62";
+	setAttr ".cuv" 2;
+createNode polyCube -n "polyCube1";
+	rename -uid "3C91BD8E-4193-913D-06DF-26B4E31E928F";
+	setAttr ".cuv" 4;
+createNode polySphere -n "polySphere1";
+	rename -uid "A89E7D23-4A8D-FD21-06A2-7A8C69EB7C83";
+createNode closestPointOnMesh -n "closestPointOnMesh1";
+	rename -uid "7EDA938B-4F4E-7D80-C0A6-E0B165B74263";
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -178,6 +254,7 @@ select -ne :standardSurface1;
 	setAttr ".bc" -type "float3" 0.40000001 0.40000001 0.40000001 ;
 	setAttr ".sr" 0.5;
 select -ne :initialShadingGroup;
+	setAttr -s 3 ".dsm";
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
@@ -199,6 +276,9 @@ select -ne :defaultColorMgtGlobals;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
+connectAttr "polyPlane1.out" "pPlaneShape1.i";
+connectAttr "polyCube1.out" "pCubeShape1.i";
+connectAttr "polySphere1.out" "pSphereShape1.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
@@ -212,4 +292,7 @@ connectAttr ":defaultArnoldDisplayDriver.msg" ":defaultArnoldRenderOptions.drive
 connectAttr ":defaultArnoldFilter.msg" ":defaultArnoldRenderOptions.filt";
 connectAttr ":defaultArnoldDriver.msg" ":defaultArnoldRenderOptions.drvr";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
+connectAttr "pPlaneShape1.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "pCubeShape1.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "pSphereShape1.iog" ":initialShadingGroup.dsm" -na;
 // End of Unit-6-Mel.ma
