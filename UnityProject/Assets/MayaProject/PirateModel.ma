@@ -1,6 +1,6 @@
 //Maya ASCII 2025ff03 scene
 //Name: PirateModel.ma
-//Last modified: Tue, Oct 28, 2025 01:45:20 PM
+//Last modified: Tue, Oct 28, 2025 02:20:33 PM
 //Codeset: 1252
 requires maya "2025ff03";
 requires -nodeType "aiOptions" -nodeType "aiAOVDriver" -nodeType "aiAOVFilter" -nodeType "aiImagerDenoiserOidn"
@@ -11,7 +11,7 @@ fileInfo "product" "Maya 2025";
 fileInfo "version" "2025";
 fileInfo "cutIdentifier" "202409190603-cbdc5a7e54";
 fileInfo "osv" "Windows 11 Home v2009 (Build: 26200)";
-fileInfo "UUID" "738BF2EA-4858-44EC-EEB9-8B8982CAFA9E";
+fileInfo "UUID" "FD74BD1A-44B0-2D31-1FA7-E0BE9C991F8D";
 createNode transform -s -n "persp";
 	rename -uid "7B0D86D3-4C70-5A5B-5A60-C1BB7B54E849";
 	setAttr ".v" no;
@@ -5781,7 +5781,7 @@ createNode groupId -n "groupId2";
 	rename -uid "B5B8ABC1-45B3-CBC5-8718-9D8E6AC1E9B2";
 	setAttr ".ihi" 0;
 createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo";
-	rename -uid "70690F92-4FD8-259F-0C84-B899032438E4";
+	rename -uid "4CFC2601-4EF5-D327-75BE-4F84DABF2269";
 	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
 	setAttr ".tgi[0].vl" -type "double2" -736.90473262279875 -833.46147192118895 ;
 	setAttr ".tgi[0].vh" -type "double2" 1144.0475735872531 379.89006137306887 ;
@@ -5828,7 +5828,7 @@ select -ne :standardSurface1;
 	setAttr ".bc" -type "float3" 0.40000001 0.40000001 0.40000001 ;
 	setAttr ".sr" 0.5;
 select -ne :initialShadingGroup;
-	setAttr -s 12 ".dsm";
+	setAttr -s 11 ".dsm";
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
