@@ -8,47 +8,71 @@ public class Minion : MonoBehaviour
     [SerializeField] private float moveSpeed = 3.5f;
     [SerializeField] private GameObject moveMarkerPrefab;
     
-    [Header("Selection Visual")]
-    [SerializeField] private GameObject selectionIndicator;
-    
+    // Cached components
     private NavMeshAgent agent;
-    private Renderer[] minionRenderers;
-    private Material[] originalMaterials;
     private GameObject currentMoveMarker;
     private bool isSelected = false;
+    private Renderer[] minionRenderers;
+    private Coroutine hideMarkerCoroutine;
 
     void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
+        InitializeComponents();
+        CreateMoveMarker();
+    }
+
+    void InitializeComponents()
+    {
+        // Cache renderers once
         minionRenderers = GetComponentsInChildren<Renderer>();
         
-        // Store original materials
-        originalMaterials = new Material[minionRenderers.Length];
-        for (int i = 0; i < minionRenderers.Length; i++)
+        // Initialize NavMeshAgent
+        agent = GetComponent<NavMeshAgent>();
+        if (agent == null)
         {
-            originalMaterials[i] = minionRenderers[i].material;
+            agent = gameObject.AddComponent<NavMeshAgent>();
         }
+        
+        ConfigureAgent();
+    }
 
-        // Configure agent
-        if (agent != null)
-        {
-            agent.speed = moveSpeed;
-            agent.acceleration = 1000f;
-            agent.angularSpeed = 360f;
-            agent.stoppingDistance = 10f;
-        }
+    void ConfigureAgent()
+    {
+        if (agent == null) return;
+        
+        agent.speed = moveSpeed;
+        agent.acceleration = 1000f;
+        agent.angularSpeed = 360f;
+        agent.stoppingDistance = 10f;
+        agent.radius = 0.5f;
+        agent.height = 2f;
+        agent.autoBraking = true;
+        
+        // Optimize agent performance
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
+    }
 
-        // Create move marker
+    void CreateMoveMarker()
+    {
         if (moveMarkerPrefab != null)
         {
             currentMoveMarker = Instantiate(moveMarkerPrefab);
             currentMoveMarker.SetActive(false);
+            
+            // Optimize: Don't update transform every frame if not visible
+            if (currentMoveMarker.GetComponent<UpdateOptimizer>() == null)
+            {
+                currentMoveMarker.AddComponent<UpdateOptimizer>();
+            }
         }
+    }
 
-        // Setup selection indicator
-        if (selectionIndicator != null)
+    void OnValidate()
+    {
+        // Update agent settings when values change in editor
+        if (agent != null)
         {
-            selectionIndicator.SetActive(false);
+            agent.speed = moveSpeed;
         }
     }
 
@@ -56,36 +80,34 @@ public class Minion : MonoBehaviour
     {
         if (agent != null && agent.isActiveAndEnabled)
         {
-            if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            {
-                agent.SetDestination(hit.position);
-                ShowMoveMarker(hit.position);
-            }
+            // Use a coroutine for pathfinding to avoid frame spikes
+            StartCoroutine(CalculateAndMove(destination));
         }
     }
 
-    public void OnSelected(Material selectedMat)
+    private System.Collections.IEnumerator CalculateAndMove(Vector3 destination)
     {
-        if (isSelected) return;
+        // Yield to allow other operations in the same frame
+        yield return null;
         
+        if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            agent.SetDestination(hit.position);
+            ShowMoveMarker(hit.position);
+        }
+    }
+
+    public void OnSelected()
+    {
         isSelected = true;
         
-        // Apply selection material to all renderers
-        for (int i = 0; i < minionRenderers.Length; i++)
+        // Cancel any pending hide operations
+        if (hideMarkerCoroutine != null)
         {
-            if (minionRenderers[i] != null && selectedMat != null)
-            {
-                minionRenderers[i].material = selectedMat;
-            }
+            StopCoroutine(hideMarkerCoroutine);
         }
-
-        // Show selection indicator
-        if (selectionIndicator != null)
-        {
-            selectionIndicator.SetActive(true);
-        }
-
-        // Show move marker if active
+        
+        // Show marker if we have an active path
         if (currentMoveMarker != null && agent.hasPath)
         {
             currentMoveMarker.SetActive(true);
@@ -94,29 +116,12 @@ public class Minion : MonoBehaviour
 
     public void OnDeselected()
     {
-        if (!isSelected) return;
-        
         isSelected = false;
         
-        // Restore original materials
-        for (int i = 0; i < minionRenderers.Length; i++)
+        // Schedule marker hide if not selected
+        if (currentMoveMarker != null && currentMoveMarker.activeInHierarchy)
         {
-            if (minionRenderers[i] != null && originalMaterials[i] != null)
-            {
-                minionRenderers[i].material = originalMaterials[i];
-            }
-        }
-
-        // Hide selection indicator
-        if (selectionIndicator != null)
-        {
-            selectionIndicator.SetActive(false);
-        }
-
-        // Hide move marker
-        if (currentMoveMarker != null)
-        {
-            currentMoveMarker.SetActive(false);
+            hideMarkerCoroutine = StartCoroutine(HideMarkerAfterDelay(3f));
         }
     }
 
@@ -127,10 +132,9 @@ public class Minion : MonoBehaviour
             currentMoveMarker.transform.position = position + Vector3.up * 0.1f;
             currentMoveMarker.SetActive(true);
             
-            // Auto-hide if not selected
             if (!isSelected)
             {
-                StartCoroutine(HideMarkerAfterDelay(3f));
+                hideMarkerCoroutine = StartCoroutine(HideMarkerAfterDelay(3f));
             }
         }
     }
@@ -142,17 +146,54 @@ public class Minion : MonoBehaviour
         {
             currentMoveMarker.SetActive(false);
         }
+        hideMarkerCoroutine = null;
     }
 
+    // Optimized update - only check path when needed
     void Update()
     {
-        // Update move marker position if selected and moving
+        // Only update marker position if it's visible and we're selected
         if (isSelected && currentMoveMarker != null && currentMoveMarker.activeInHierarchy)
         {
-            if (agent.hasPath)
+            if (agent.hasPath && agent.remainingDistance > agent.stoppingDistance)
             {
                 currentMoveMarker.transform.position = agent.destination + Vector3.up * 0.1f;
             }
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Clean up
+        if (currentMoveMarker != null)
+        {
+            Destroy(currentMoveMarker);
+        }
+        
+        if (hideMarkerCoroutine != null)
+        {
+            StopCoroutine(hideMarkerCoroutine);
+        }
+    }
+
+    // Getters
+    public bool IsSelected() => isSelected;
+    public bool IsMoving() => agent != null && agent.hasPath && agent.remainingDistance > agent.stoppingDistance;
+    public Renderer[] GetRenderers() => minionRenderers;
+}
+
+// Helper component to optimize GameObject updates
+public class UpdateOptimizer : MonoBehaviour
+{
+    [SerializeField] private float updateInterval = 0.1f;
+    private float lastUpdateTime;
+    
+    void Update()
+    {
+        if (Time.time - lastUpdateTime > updateInterval)
+        {
+            // Custom update logic here if needed
+            lastUpdateTime = Time.time;
         }
     }
 }

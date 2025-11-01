@@ -3923,18 +3923,16 @@ MonoBehaviour:
   cameraDistance: 400
   azimuthAngle: 45
   altitudeAngle: 45
-  zoomSpeed: 50
-  minZoomDistance: 100
-  maxZoomDistance: 400
+  movementSpeed: 300
+  sprintMultiplier: 2
   rotationSpeed: 90
   rotateLeftKey: 113
   rotateRightKey: 101
-  movementSpeed: 300
-  sprintMultiplier: 2
-  smoothMovement: 0
+  zoomSpeed: 50
+  minZoomDistance: 100
+  maxZoomDistance: 400
+  enableSmoothing: 1
   smoothTime: 0.01
-  smoothRotation: 0
-  rotationSmoothTime: 0.2
 --- !u!114 &557768106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5778,6 +5776,8 @@ MonoBehaviour:
   selectedMaterial: {fileID: 2100000, guid: 40e9548536ffebc42965da6920277e86, type: 2}
   selectionBox: {fileID: 397074662}
   canvas: {fileID: 45094860}
+  minionUpdateInterval: 0.1
+  maxMinionsToProcessPerFrame: 10
   debugMode: 1
 --- !u!4 &874999095
 Transform:

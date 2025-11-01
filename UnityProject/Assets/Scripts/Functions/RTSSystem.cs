@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class RTSSystem : MonoBehaviour
@@ -9,65 +10,75 @@ public class RTSSystem : MonoBehaviour
     [SerializeField] private LayerMask groundLayer = 1 << 7;
     [SerializeField] private Material selectedMaterial;
     
-    [Header("Selection Visual")]
-    [SerializeField] private GameObject selectionBoxPrefab;
-    [SerializeField] private Color selectionBoxColor = new Color(0, 0.5f, 1f, 0.3f);
-    [SerializeField] private Color selectionBoxBorderColor = Color.blue;
+    [Header("UI References")]
+    [SerializeField] private RectTransform selectionBox;
+    [SerializeField] private Canvas canvas;
+    
+    [Header("Selection Thresholds")]
+    [SerializeField] private float clickDragThreshold = 20f;
+    
+    [Header("Debug")]
+    [SerializeField] private bool debugMode = true;
     
     private List<Minion> selectedMinions = new List<Minion>();
+    private List<Material[]> originalMaterials = new List<Material[]>();
     private Camera mainCamera;
-    private Vector3 selectionStartWorld;
+    private Vector2 selectionStart;
     private bool isSelecting = false;
-    private GameObject selectionBox;
-    private MeshRenderer selectionBoxRenderer;
 
     void Start()
     {
         mainCamera = Camera.main;
-        CreateSelectionBox();
+        
+        if (canvas == null)
+        {
+            canvas = FindObjectOfType<Canvas>();
+            if (canvas == null) CreateCanvas();
+        }
+        
+        if (selectionBox == null)
+        {
+            CreateSelectionBox();
+        }
+        else
+        {
+            selectionBox.gameObject.SetActive(false);
+        }
+        
+        if (debugMode) Debug.Log("RTSSystem initialized");
+    }
+
+    void CreateCanvas()
+    {
+        GameObject canvasObj = new GameObject("SelectionCanvas");
+        canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvasObj.AddComponent<CanvasScaler>();
+        canvasObj.AddComponent<GraphicRaycaster>();
     }
 
     void CreateSelectionBox()
     {
-        // Create selection box visual
-        selectionBox = new GameObject("SelectionBox");
-        selectionBox.transform.SetParent(transform);
+        if (canvas == null) return;
+
+        GameObject boxObj = new GameObject("SelectionBox");
+        boxObj.transform.SetParent(canvas.transform);
+        boxObj.transform.SetAsLastSibling();
         
-        // Add mesh components
-        MeshFilter meshFilter = selectionBox.AddComponent<MeshFilter>();
-        selectionBoxRenderer = selectionBox.AddComponent<MeshRenderer>();
+        selectionBox = boxObj.AddComponent<RectTransform>();
+        Image boxImage = boxObj.AddComponent<Image>();
         
-        // Create a simple quad mesh
-        Mesh mesh = new Mesh();
-        mesh.vertices = new Vector3[] {
-            new Vector3(0, 0, 0),
-            new Vector3(1, 0, 0),
-            new Vector3(1, 1, 0),
-            new Vector3(0, 1, 0)
-        };
-        mesh.triangles = new int[] { 0, 1, 2, 2, 3, 0 };
-        mesh.uv = new Vector2[] {
-            new Vector2(0, 0),
-            new Vector2(1, 0),
-            new Vector2(1, 1),
-            new Vector2(0, 1)
-        };
-        meshFilter.mesh = mesh;
+        boxImage.color = new Color(0.2f, 0.4f, 1f, 0.4f);
         
-        // Create material for selection box
-        Material material = new Material(Shader.Find("Standard"));
-        material.color = selectionBoxColor;
-        material.SetFloat("_Mode", 2); // Fade mode
-        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        material.SetInt("_ZWrite", 0);
-        material.DisableKeyword("_ALPHATEST_ON");
-        material.EnableKeyword("_ALPHABLEND_ON");
-        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        material.renderQueue = 3000;
+        Outline outline = boxObj.AddComponent<Outline>();
+        outline.effectColor = Color.blue;
+        outline.effectDistance = new Vector2(1, -1);
         
-        selectionBoxRenderer.material = material;
-        selectionBox.SetActive(false);
+        selectionBox.anchorMin = Vector2.zero;
+        selectionBox.anchorMax = Vector2.zero;
+        selectionBox.pivot = Vector2.zero;
+        
+        selectionBox.gameObject.SetActive(false);
     }
 
     void Update()
@@ -78,19 +89,16 @@ public class RTSSystem : MonoBehaviour
 
     void HandleSelectionInput()
     {
-        // Start selection
         if (Input.GetMouseButtonDown(0))
         {
             StartSelection();
         }
 
-        // Update selection
         if (Input.GetMouseButton(0) && isSelecting)
         {
-            UpdateSelection();
+            UpdateSelectionBox();
         }
 
-        // End selection
         if (Input.GetMouseButtonUp(0) && isSelecting)
         {
             EndSelection();
@@ -99,61 +107,70 @@ public class RTSSystem : MonoBehaviour
 
     void StartSelection()
     {
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+        selectionStart = Input.mousePosition;
+        isSelecting = true;
         
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer))
+        if (selectionBox != null)
         {
-            selectionStartWorld = hit.point;
-            isSelecting = true;
-            selectionBox.SetActive(true);
-            
-            // Only clear selection if not holding shift
-            if (!Input.GetKey(KeyCode.LeftShift))
-            {
-                ClearSelection();
-            }
+            selectionBox.gameObject.SetActive(true);
+            UpdateSelectionBoxPosition(selectionStart, selectionStart);
         }
+        
+        // Only clear selection if not holding shift for multi-select
+        if (!Input.GetKey(KeyCode.LeftShift))
+        {
+            ClearSelection();
+        }
+        
+        if (debugMode) Debug.Log("Selection started");
     }
 
-    void UpdateSelection()
+    void UpdateSelectionBox()
     {
-        // Keep the selection box active while dragging
-        if (selectionBox.activeInHierarchy)
-        {
-            UpdateSelectionBoxVisual();
-        }
+        if (selectionBox == null) return;
+        UpdateSelectionBoxPosition(selectionStart, Input.mousePosition);
+    }
+
+    void UpdateSelectionBoxPosition(Vector2 startPos, Vector2 currentPos)
+    {
+        float width = currentPos.x - startPos.x;
+        float height = currentPos.y - startPos.y;
+        
+        Vector2 boxPosition = new Vector2(
+            Mathf.Min(startPos.x, currentPos.x),
+            Mathf.Min(startPos.y, currentPos.y)
+        );
+        
+        Vector2 boxSize = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+        
+        selectionBox.anchoredPosition = boxPosition;
+        selectionBox.sizeDelta = boxSize;
     }
 
     void EndSelection()
     {
         isSelecting = false;
-        selectionBox.SetActive(false);
         
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer))
+        if (selectionBox != null)
         {
-            Vector3 selectionEndWorld = hit.point;
-            
-            // Check if it was a click (small selection area)
-            float selectionSize = Vector3.Distance(selectionStartWorld, selectionEndWorld);
-            
-            if (selectionSize < 1f)
-            {
-                // Single click selection
-                HandleSingleClickSelection(hit.point);
-            }
-            else
-            {
-                // Box selection
-                HandleBoxSelection(selectionStartWorld, selectionEndWorld);
-            }
+            selectionBox.gameObject.SetActive(false);
         }
+        
+        Vector2 selectionEnd = Input.mousePosition;
+        
+        if (Vector2.Distance(selectionStart, selectionEnd) < clickDragThreshold)
+        {
+            HandleSingleClickSelection();
+        }
+        else
+        {
+            HandleBoxSelection(selectionStart, selectionEnd);
+        }
+        
+        if (debugMode) Debug.Log($"Selection ended. {selectedMinions.Count} minions selected");
     }
 
-    void HandleSingleClickSelection(Vector3 clickPosition)
+    void HandleSingleClickSelection()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
@@ -163,58 +180,54 @@ public class RTSSystem : MonoBehaviour
             Minion minion = hit.collider.GetComponent<Minion>();
             if (minion != null)
             {
+                // If shift is held, add to selection instead of replacing
+                if (!Input.GetKey(KeyCode.LeftShift))
+                {
+                    ClearSelection();
+                }
                 SelectMinion(minion);
+                
+                if (debugMode) Debug.Log($"Single click selected: {minion.gameObject.name}");
+            }
+        }
+        else
+        {
+            // Clicked on empty space - clear selection unless shift is held
+            if (!Input.GetKey(KeyCode.LeftShift))
+            {
+                ClearSelection();
             }
         }
     }
 
-    void HandleBoxSelection(Vector3 startWorld, Vector3 endWorld)
+    void HandleBoxSelection(Vector2 startScreen, Vector2 endScreen)
     {
-        // Calculate selection bounds in world space
-        Bounds selectionBounds = new Bounds();
-        selectionBounds.SetMinMax(
-            Vector3.Min(startWorld, endWorld),
-            Vector3.Max(startWorld, endWorld)
-        );
-        
-        // Expand bounds vertically to catch all minions
-        selectionBounds.Expand(new Vector3(0, 10f, 0));
-        
-        // Find all minions in scene
+        Rect selectionRect = GetScreenRect(startScreen, endScreen);
         Minion[] allMinions = FindObjectsOfType<Minion>();
         
+        int selectedCount = 0;
         foreach (Minion minion in allMinions)
         {
-            if (selectionBounds.Contains(minion.transform.position))
+            Vector2 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            if (selectionRect.Contains(screenPos))
             {
                 SelectMinion(minion);
+                selectedCount++;
             }
         }
+        
+        if (debugMode) Debug.Log($"Box selection: {selectedCount} minions selected");
     }
 
-    void UpdateSelectionBoxVisual()
+    Rect GetScreenRect(Vector2 screenPosition1, Vector2 screenPosition2)
     {
-        if (!isSelecting) return;
-
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+        screenPosition1.y = Screen.height - screenPosition1.y;
+        screenPosition2.y = Screen.height - screenPosition2.y;
         
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer))
-        {
-            Vector3 currentWorldPos = hit.point;
-            
-            // Calculate center and size of selection box
-            Vector3 center = (selectionStartWorld + currentWorldPos) / 2f;
-            Vector3 size = new Vector3(
-                Mathf.Abs(currentWorldPos.x - selectionStartWorld.x),
-                0.1f,
-                Mathf.Abs(currentWorldPos.z - selectionStartWorld.z)
-            );
-            
-            // Position and scale the selection box
-            selectionBox.transform.position = center + Vector3.up * 0.05f;
-            selectionBox.transform.localScale = size;
-        }
+        Vector2 topLeft = Vector2.Min(screenPosition1, screenPosition2);
+        Vector2 bottomRight = Vector2.Max(screenPosition1, screenPosition2);
+        
+        return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
     }
 
     void HandleCommands()
@@ -228,16 +241,24 @@ public class RTSSystem : MonoBehaviour
             {
                 if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 1.0f, NavMesh.AllAreas))
                 {
-                    // Show move markers
+                    if (debugMode) Debug.Log($"Commanding {selectedMinions.Count} minions to {navHit.position}");
+                    
+                    // Show move markers for all SELECTED minions only
                     foreach (Minion minion in selectedMinions)
                     {
-                        minion.ShowMoveMarker(navHit.position);
+                        if (minion != null)
+                        {
+                            minion.ShowMoveMarker(navHit.position);
+                        }
                     }
 
-                    // Move units
+                    // Move only SELECTED minions
                     if (selectedMinions.Count == 1)
                     {
-                        selectedMinions[0].MoveTo(navHit.position);
+                        if (selectedMinions[0] != null)
+                        {
+                            selectedMinions[0].MoveTo(navHit.position);
+                        }
                     }
                     else
                     {
@@ -250,26 +271,62 @@ public class RTSSystem : MonoBehaviour
 
     void SelectMinion(Minion minion)
     {
-        if (selectedMinions.Contains(minion)) return;
+        if (selectedMinions.Contains(minion)) 
+        {
+            if (debugMode) Debug.Log($"Minion {minion.gameObject.name} already selected");
+            return;
+        }
         
         selectedMinions.Add(minion);
-        minion.OnSelected(selectedMaterial);
         
-        Debug.Log($"Selected: {minion.name}");
+        // Store original materials and apply selection material
+        Renderer[] renderers = minion.GetComponentsInChildren<Renderer>();
+        Material[] originalMats = new Material[renderers.Length];
+        
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+            {
+                originalMats[i] = renderers[i].material;
+                if (selectedMaterial != null)
+                {
+                    renderers[i].material = selectedMaterial;
+                }
+            }
+        }
+        
+        originalMaterials.Add(originalMats);
+        minion.OnSelected();
+        
+        if (debugMode) Debug.Log($"Selected minion: {minion.gameObject.name}");
     }
 
     void ClearSelection()
     {
-        foreach (Minion minion in selectedMinions)
+        if (debugMode) Debug.Log($"Clearing selection of {selectedMinions.Count} minions");
+        
+        // Restore original materials for all selected minions
+        for (int i = 0; i < selectedMinions.Count; i++)
         {
-            if (minion != null)
+            if (selectedMinions[i] != null)
             {
-                minion.OnDeselected();
+                Renderer[] renderers = selectedMinions[i].GetComponentsInChildren<Renderer>();
+                if (i < originalMaterials.Count && originalMaterials[i] != null)
+                {
+                    for (int j = 0; j < renderers.Length && j < originalMaterials[i].Length; j++)
+                    {
+                        if (renderers[j] != null && originalMaterials[i][j] != null)
+                        {
+                            renderers[j].material = originalMaterials[i][j];
+                        }
+                    }
+                }
+                selectedMinions[i].OnDeselected();
             }
         }
         
         selectedMinions.Clear();
-        Debug.Log("Selection cleared");
+        originalMaterials.Clear();
     }
 
     void MoveGroupTo(Vector3 destination)
@@ -277,12 +334,14 @@ public class RTSSystem : MonoBehaviour
         int count = selectedMinions.Count;
         if (count == 0) return;
         
-        // Simple formation calculation
+        // Simple formation calculation - only for SELECTED minions
         int rows = Mathf.CeilToInt(Mathf.Sqrt(count));
         float spacing = 2f;
         
         for (int i = 0; i < count; i++)
         {
+            if (selectedMinions[i] == null) continue;
+            
             int row = i / rows;
             int col = i % rows;
             
@@ -300,16 +359,42 @@ public class RTSSystem : MonoBehaviour
             }
         }
         
-        Debug.Log($"Moving {count} units to {destination}");
+        if (debugMode) Debug.Log($"Moved group of {count} minions to formation");
     }
 
-    // Visual debug
-    void OnDrawGizmos()
+    // Debug methods
+    [ContextMenu("Log Selected Minions")]
+    void LogSelectedMinions()
     {
-        if (isSelecting)
+        Debug.Log($"=== SELECTED MINIONS: {selectedMinions.Count} ===");
+        for (int i = 0; i < selectedMinions.Count; i++)
         {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireCube(selectionBox.transform.position, selectionBox.transform.localScale);
+            if (selectedMinions[i] != null)
+            {
+                Debug.Log($"{i}: {selectedMinions[i].gameObject.name}");
+            }
+            else
+            {
+                Debug.Log($"{i}: NULL (missing minion)");
+            }
         }
+    }
+
+    [ContextMenu("Clear Selection")]
+    void ClearSelectionContext()
+    {
+        ClearSelection();
+    }
+
+    [ContextMenu("Select All Minions")]
+    void SelectAllMinions()
+    {
+        ClearSelection();
+        Minion[] allMinions = FindObjectsOfType<Minion>();
+        foreach (Minion minion in allMinions)
+        {
+            SelectMinion(minion);
+        }
+        Debug.Log($"Selected all {allMinions.Length} minions");
     }
 }

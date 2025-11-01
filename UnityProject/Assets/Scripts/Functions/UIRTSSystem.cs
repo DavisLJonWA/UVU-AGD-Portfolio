@@ -14,15 +14,34 @@ public class UIRTSSystem : MonoBehaviour
     [SerializeField] private RectTransform selectionBox;
     [SerializeField] private Canvas canvas;
     
+    [Header("Performance Settings")]
+    [SerializeField] private float minionUpdateInterval = 0.1f; // Batch minion updates
+    [SerializeField] private int maxMinionsToProcessPerFrame = 10;
+    
+    [Header("Debug")]
+    [SerializeField] private bool debugMode = false;
+    
+    // Optimized data structures
     private List<Minion> selectedMinions = new List<Minion>();
+    private Dictionary<Minion, Material[]> originalMaterials = new Dictionary<Minion, Material[]>();
+    private Minion[] minionCache;
+    private float lastMinionCacheTime;
+    private float minionCacheRefreshRate = 1f; // Refresh cache every second
+    
     private Camera mainCamera;
     private Vector2 selectionStart;
     private bool isSelecting = false;
+    private float nextMinionUpdateTime;
 
     void Start()
     {
         mainCamera = Camera.main;
-        
+        InitializeUI();
+        CacheMinions(); // Initial cache
+    }
+
+    void InitializeUI()
+    {
         if (canvas == null)
         {
             canvas = FindObjectOfType<Canvas>();
@@ -64,7 +83,6 @@ public class UIRTSSystem : MonoBehaviour
         outline.effectColor = Color.blue;
         outline.effectDistance = new Vector2(1, -1);
         
-        // Set anchors and pivot to stretch properly
         selectionBox.anchorMin = Vector2.zero;
         selectionBox.anchorMax = Vector2.zero;
         selectionBox.pivot = Vector2.zero;
@@ -76,6 +94,21 @@ public class UIRTSSystem : MonoBehaviour
     {
         HandleSelectionInput();
         HandleCommands();
+        
+        // Update minion cache periodically (less frequent than every frame)
+        if (Time.time - lastMinionCacheTime > minionCacheRefreshRate)
+        {
+            CacheMinions();
+        }
+    }
+
+    void CacheMinions()
+    {
+        // Only recache if enough time has passed
+        minionCache = FindObjectsOfType<Minion>();
+        lastMinionCacheTime = Time.time;
+        
+        if (debugMode) Debug.Log($"Minion cache updated: {minionCache.Length} minions");
     }
 
     void HandleSelectionInput()
@@ -104,13 +137,13 @@ public class UIRTSSystem : MonoBehaviour
         if (selectionBox != null)
         {
             selectionBox.gameObject.SetActive(true);
-            // Start with zero size at click position
-            selectionBox.anchoredPosition = selectionStart;
-            selectionBox.sizeDelta = Vector2.zero;
+            ResetSelectionBox();
         }
         
+        // Only clear selection if not holding shift for multi-select
         if (!Input.GetKey(KeyCode.LeftShift))
         {
+            // Check if we clicked directly on a minion
             Minion clickedMinion = GetMinionUnderMouse();
             if (clickedMinion == null)
             {
@@ -119,30 +152,23 @@ public class UIRTSSystem : MonoBehaviour
         }
     }
 
+    void ResetSelectionBox()
+    {
+        if (selectionBox == null) return;
+        selectionBox.anchoredPosition = selectionStart;
+        selectionBox.sizeDelta = Vector2.zero;
+    }
+
     void UpdateSelectionBox()
     {
         if (selectionBox == null) return;
         
         Vector2 currentMousePos = Input.mousePosition;
+        Vector2 min = Vector2.Min(selectionStart, currentMousePos);
+        Vector2 max = Vector2.Max(selectionStart, currentMousePos);
         
-        // Calculate the rectangle from start to current position
-        float width = currentMousePos.x - selectionStart.x;
-        float height = currentMousePos.y - selectionStart.y;
-        
-        // Set position - always use the minimum coordinates as anchor
-        Vector2 boxPosition = new Vector2(
-            Mathf.Min(selectionStart.x, currentMousePos.x),
-            Mathf.Min(selectionStart.y, currentMousePos.y)
-        );
-        
-        // Set size - always use absolute values
-        Vector2 boxSize = new Vector2(
-            Mathf.Abs(width),
-            Mathf.Abs(height)
-        );
-        
-        selectionBox.anchoredPosition = boxPosition;
-        selectionBox.sizeDelta = boxSize;
+        selectionBox.anchoredPosition = min;
+        selectionBox.sizeDelta = max - min;
     }
 
     void EndSelection()
@@ -155,8 +181,9 @@ public class UIRTSSystem : MonoBehaviour
         }
         
         Vector2 selectionEnd = Input.mousePosition;
+        float dragDistance = Vector2.Distance(selectionStart, selectionEnd);
         
-        if (Vector2.Distance(selectionStart, selectionEnd) < 5f)
+        if (dragDistance < 10f)
         {
             HandleSingleClickSelection();
         }
@@ -182,26 +209,46 @@ public class UIRTSSystem : MonoBehaviour
     void HandleBoxSelection(Vector2 startScreen, Vector2 endScreen)
     {
         Rect selectionRect = GetScreenRect(startScreen, endScreen);
-        Minion[] allMinions = FindObjectsOfType<Minion>();
+        int selectedCount = 0;
+        int processedThisFrame = 0;
         
-        foreach (Minion minion in allMinions)
+        // Use cached minions instead of FindObjectsOfType every time
+        foreach (Minion minion in minionCache)
         {
-            Vector2 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            if (minion == null) continue;
             
-            if (selectionRect.Contains(screenPos))
+            // Limit processing per frame to prevent lag with many minions
+            if (processedThisFrame >= maxMinionsToProcessPerFrame)
+            {
+                // Continue processing next frame
+                if (debugMode) Debug.Log("Reached minion processing limit for this frame");
+                break;
+            }
+            
+            Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            
+            // Skip if behind camera
+            if (screenPos.z < 0) continue;
+            
+            Vector2 screenPos2D = new Vector2(screenPos.x, screenPos.y);
+            
+            if (selectionRect.Contains(screenPos2D))
             {
                 SelectMinion(minion);
+                selectedCount++;
             }
+            
+            processedThisFrame++;
         }
+        
+        if (debugMode) Debug.Log($"Box selection: {selectedCount} minions selected");
     }
 
     Rect GetScreenRect(Vector2 screenPosition1, Vector2 screenPosition2)
     {
-        // Convert to bottom-left origin coordinates
         screenPosition1.y = Screen.height - screenPosition1.y;
         screenPosition2.y = Screen.height - screenPosition2.y;
         
-        // Calculate the rectangle bounds - always use min/max to handle all directions
         Vector2 topLeft = Vector2.Min(screenPosition1, screenPosition2);
         Vector2 bottomRight = Vector2.Max(screenPosition1, screenPosition2);
         
@@ -232,21 +279,41 @@ public class UIRTSSystem : MonoBehaviour
             {
                 if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 1.0f, NavMesh.AllAreas))
                 {
-                    foreach (Minion minion in selectedMinions)
-                    {
-                        minion.ShowMoveMarker(navHit.position);
-                    }
-
-                    if (selectedMinions.Count == 1)
-                    {
-                        selectedMinions[0].MoveTo(navHit.position);
-                    }
-                    else
-                    {
-                        MoveGroupTo(navHit.position);
-                    }
+                    // Process commands in batches to avoid frame spikes
+                    StartCoroutine(ProcessCommandsCoroutine(navHit.position));
                 }
             }
+        }
+    }
+
+    private System.Collections.IEnumerator ProcessCommandsCoroutine(Vector3 destination)
+    {
+        if (debugMode) Debug.Log($"Commanding {selectedMinions.Count} minions to {destination}");
+        
+        int processed = 0;
+        foreach (Minion minion in selectedMinions)
+        {
+            if (minion == null) continue;
+            
+            minion.ShowMoveMarker(destination);
+            processed++;
+            
+            // Yield every few minions to spread workload across frames
+            if (processed % 5 == 0)
+                yield return null;
+        }
+        
+        // Move minions
+        if (selectedMinions.Count == 1)
+        {
+            if (selectedMinions[0] != null)
+            {
+                selectedMinions[0].MoveTo(destination);
+            }
+        }
+        else
+        {
+            MoveGroupTo(destination);
         }
     }
 
@@ -255,23 +322,52 @@ public class UIRTSSystem : MonoBehaviour
         if (selectedMinions.Contains(minion)) return;
         
         selectedMinions.Add(minion);
-        minion.OnSelected(selectedMaterial);
         
-        Debug.Log($"Selected: {minion.name}");
+        // Apply selection material with caching
+        if (selectedMaterial != null)
+        {
+            Renderer[] renderers = minion.GetComponentsInChildren<Renderer>();
+            Material[] originalMats = new Material[renderers.Length];
+            
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                {
+                    originalMats[i] = renderers[i].material;
+                    renderers[i].material = selectedMaterial;
+                }
+            }
+            
+            originalMaterials[minion] = originalMats;
+        }
+        
+        minion.OnSelected();
     }
 
     void ClearSelection()
     {
+        // Restore original materials using dictionary for faster lookups
         foreach (Minion minion in selectedMinions)
         {
             if (minion != null)
             {
+                if (originalMaterials.TryGetValue(minion, out Material[] originalMats))
+                {
+                    Renderer[] renderers = minion.GetComponentsInChildren<Renderer>();
+                    for (int j = 0; j < renderers.Length && j < originalMats.Length; j++)
+                    {
+                        if (renderers[j] != null && originalMats[j] != null)
+                        {
+                            renderers[j].material = originalMats[j];
+                        }
+                    }
+                    originalMaterials.Remove(minion);
+                }
                 minion.OnDeselected();
             }
         }
         
         selectedMinions.Clear();
-        Debug.Log("Selection cleared");
     }
 
     void MoveGroupTo(Vector3 destination)
@@ -284,6 +380,8 @@ public class UIRTSSystem : MonoBehaviour
         
         for (int i = 0; i < count; i++)
         {
+            if (selectedMinions[i] == null) continue;
+            
             int row = i / rows;
             int col = i % rows;
             
@@ -300,7 +398,5 @@ public class UIRTSSystem : MonoBehaviour
                 selectedMinions[i].MoveTo(hit.position);
             }
         }
-        
-        Debug.Log($"Moving {count} units to {destination}");
     }
 }
