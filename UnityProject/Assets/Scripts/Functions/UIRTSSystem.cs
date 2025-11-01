@@ -14,30 +14,31 @@ public class UIRTSSystem : MonoBehaviour
     [SerializeField] private RectTransform selectionBox;
     [SerializeField] private Canvas canvas;
     
+    [Header("Selection Settings")]
+    [SerializeField] private float selectionTolerance = 10f;
+    [SerializeField] private bool useColliderBounds = true;
+    
     [Header("Performance Settings")]
-    [SerializeField] private float minionUpdateInterval = 0.1f; // Batch minion updates
-    [SerializeField] private int maxMinionsToProcessPerFrame = 10;
+    [SerializeField] private int maxMinionsToProcessPerFrame = 15;
     
     [Header("Debug")]
-    [SerializeField] private bool debugMode = false;
+    [SerializeField] private bool debugMode = true;
+    [SerializeField] private bool drawDebugRays = false;
     
-    // Optimized data structures
     private List<Minion> selectedMinions = new List<Minion>();
     private Dictionary<Minion, Material[]> originalMaterials = new Dictionary<Minion, Material[]>();
     private Minion[] minionCache;
-    private float lastMinionCacheTime;
-    private float minionCacheRefreshRate = 1f; // Refresh cache every second
-    
     private Camera mainCamera;
     private Vector2 selectionStart;
     private bool isSelecting = false;
-    private float nextMinionUpdateTime;
 
     void Start()
     {
         mainCamera = Camera.main;
         InitializeUI();
-        CacheMinions(); // Initial cache
+        CacheMinions();
+        
+        if (debugMode) Debug.Log("UIRTSSystem initialized");
     }
 
     void InitializeUI()
@@ -95,8 +96,8 @@ public class UIRTSSystem : MonoBehaviour
         HandleSelectionInput();
         HandleCommands();
         
-        // Update minion cache periodically (less frequent than every frame)
-        if (Time.time - lastMinionCacheTime > minionCacheRefreshRate)
+        // Update cache every few seconds
+        if (Time.frameCount % 300 == 0) // Every 300 frames (~5 seconds at 60fps)
         {
             CacheMinions();
         }
@@ -104,10 +105,7 @@ public class UIRTSSystem : MonoBehaviour
 
     void CacheMinions()
     {
-        // Only recache if enough time has passed
         minionCache = FindObjectsOfType<Minion>();
-        lastMinionCacheTime = Time.time;
-        
         if (debugMode) Debug.Log($"Minion cache updated: {minionCache.Length} minions");
     }
 
@@ -140,16 +138,17 @@ public class UIRTSSystem : MonoBehaviour
             ResetSelectionBox();
         }
         
-        // Only clear selection if not holding shift for multi-select
+        // Only clear selection if we're not clicking directly on a minion with shift held
         if (!Input.GetKey(KeyCode.LeftShift))
         {
-            // Check if we clicked directly on a minion
             Minion clickedMinion = GetMinionUnderMouse();
             if (clickedMinion == null)
             {
                 ClearSelection();
             }
         }
+        
+        if (debugMode) Debug.Log($"Selection started at: {selectionStart}");
     }
 
     void ResetSelectionBox()
@@ -183,7 +182,7 @@ public class UIRTSSystem : MonoBehaviour
         Vector2 selectionEnd = Input.mousePosition;
         float dragDistance = Vector2.Distance(selectionStart, selectionEnd);
         
-        if (dragDistance < 10f)
+        if (dragDistance < 5f)
         {
             HandleSingleClickSelection();
         }
@@ -203,36 +202,46 @@ public class UIRTSSystem : MonoBehaviour
                 ClearSelection();
             }
             SelectMinion(minion);
+            
+            if (debugMode) Debug.Log($"Single click selected: {minion.gameObject.name}");
+        }
+        else
+        {
+            if (debugMode) Debug.Log("Single click on empty space - no minion found");
         }
     }
 
     void HandleBoxSelection(Vector2 startScreen, Vector2 endScreen)
     {
-        Rect selectionRect = GetScreenRect(startScreen, endScreen);
+        // Create selection rectangle in screen coordinates
+        Rect selectionRect = new Rect(
+            Mathf.Min(startScreen.x, endScreen.x),
+            Mathf.Min(startScreen.y, endScreen.y),
+            Mathf.Abs(endScreen.x - startScreen.x),
+            Mathf.Abs(endScreen.y - startScreen.y)
+        );
+        
+        if (debugMode) 
+        {
+            Debug.Log($"Selection Rect: {selectionRect}");
+            Debug.Log($"Screen size: {Screen.width}x{Screen.height}");
+        }
+        
         int selectedCount = 0;
         int processedThisFrame = 0;
         
-        // Use cached minions instead of FindObjectsOfType every time
         foreach (Minion minion in minionCache)
         {
             if (minion == null) continue;
             
-            // Limit processing per frame to prevent lag with many minions
             if (processedThisFrame >= maxMinionsToProcessPerFrame)
             {
-                // Continue processing next frame
                 if (debugMode) Debug.Log("Reached minion processing limit for this frame");
                 break;
             }
             
-            Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
-            
-            // Skip if behind camera
-            if (screenPos.z < 0) continue;
-            
-            Vector2 screenPos2D = new Vector2(screenPos.x, screenPos.y);
-            
-            if (selectionRect.Contains(screenPos2D))
+            // Check if minion is within selection rectangle
+            if (IsMinionInSelectionRect(minion, selectionRect))
             {
                 SelectMinion(minion);
                 selectedCount++;
@@ -241,18 +250,86 @@ public class UIRTSSystem : MonoBehaviour
             processedThisFrame++;
         }
         
-        if (debugMode) Debug.Log($"Box selection: {selectedCount} minions selected");
+        if (debugMode) Debug.Log($"Box selection completed: {selectedCount} minions selected");
     }
 
-    Rect GetScreenRect(Vector2 screenPosition1, Vector2 screenPosition2)
+    bool IsMinionInSelectionRect(Minion minion, Rect selectionRect)
     {
-        screenPosition1.y = Screen.height - screenPosition1.y;
-        screenPosition2.y = Screen.height - screenPosition2.y;
+        if (useColliderBounds)
+        {
+            // Use collider bounds for more accurate selection
+            Collider collider = minion.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Bounds bounds = collider.bounds;
+                return IsBoundsInSelectionRect(bounds, selectionRect);
+            }
+        }
         
-        Vector2 topLeft = Vector2.Min(screenPosition1, screenPosition2);
-        Vector2 bottomRight = Vector2.Max(screenPosition1, screenPosition2);
+        // Fallback to transform position
+        Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
         
-        return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+        // Skip if behind camera
+        if (screenPos.z <= 0) return false;
+        
+        // Apply tolerance
+        Rect expandedRect = new Rect(
+            selectionRect.x - selectionTolerance,
+            selectionRect.y - selectionTolerance,
+            selectionRect.width + (selectionTolerance * 2),
+            selectionRect.height + (selectionTolerance * 2)
+        );
+        
+        bool isInRect = expandedRect.Contains(new Vector2(screenPos.x, screenPos.y));
+        
+        if (debugMode && drawDebugRays)
+        {
+            Debug.DrawRay(minion.transform.position, Vector3.up * 2f, isInRect ? Color.green : Color.red, 1f);
+        }
+        
+        return isInRect;
+    }
+
+    bool IsBoundsInSelectionRect(Bounds bounds, Rect selectionRect)
+    {
+        // Check multiple points of the bounds to ensure accurate selection
+        Vector3[] boundPoints = new Vector3[8];
+        
+        // Get all corners of the bounds
+        boundPoints[0] = bounds.min;
+        boundPoints[1] = bounds.max;
+        boundPoints[2] = new Vector3(bounds.min.x, bounds.min.y, bounds.max.z);
+        boundPoints[3] = new Vector3(bounds.min.x, bounds.max.y, bounds.min.z);
+        boundPoints[4] = new Vector3(bounds.max.x, bounds.min.y, bounds.min.z);
+        boundPoints[5] = new Vector3(bounds.min.x, bounds.max.y, bounds.max.z);
+        boundPoints[6] = new Vector3(bounds.max.x, bounds.min.y, bounds.max.z);
+        boundPoints[7] = new Vector3(bounds.max.x, bounds.max.y, bounds.min.z);
+        
+        int pointsInRect = 0;
+        
+        foreach (Vector3 worldPoint in boundPoints)
+        {
+            Vector3 screenPoint = mainCamera.WorldToScreenPoint(worldPoint);
+            
+            // Skip if behind camera
+            if (screenPoint.z <= 0) continue;
+            
+            // Apply tolerance
+            Rect expandedRect = new Rect(
+                selectionRect.x - selectionTolerance,
+                selectionRect.y - selectionTolerance,
+                selectionRect.width + (selectionTolerance * 2),
+                selectionRect.height + (selectionTolerance * 2)
+            );
+            
+            if (expandedRect.Contains(new Vector2(screenPoint.x, screenPoint.y)))
+            {
+                pointsInRect++;
+            }
+        }
+        
+        // Consider the bounds in the selection rect if at least one point is inside
+        return pointsInRect > 0;
     }
 
     Minion GetMinionUnderMouse()
@@ -262,7 +339,12 @@ public class UIRTSSystem : MonoBehaviour
         
         if (Physics.Raycast(ray, out hit, Mathf.Infinity, selectableLayer))
         {
-            return hit.collider.GetComponent<Minion>();
+            Minion minion = hit.collider.GetComponent<Minion>();
+            if (minion != null)
+            {
+                if (debugMode) Debug.Log($"Clicked on minion: {minion.gameObject.name}");
+                return minion;
+            }
         }
         
         return null;
@@ -279,51 +361,43 @@ public class UIRTSSystem : MonoBehaviour
             {
                 if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 1.0f, NavMesh.AllAreas))
                 {
-                    // Process commands in batches to avoid frame spikes
-                    StartCoroutine(ProcessCommandsCoroutine(navHit.position));
+                    if (debugMode) Debug.Log($"Commanding {selectedMinions.Count} minions to {navHit.position}");
+                    
+                    foreach (Minion minion in selectedMinions)
+                    {
+                        if (minion != null)
+                        {
+                            minion.ShowMoveMarker(navHit.position);
+                        }
+                    }
+
+                    if (selectedMinions.Count == 1)
+                    {
+                        if (selectedMinions[0] != null)
+                        {
+                            selectedMinions[0].MoveTo(navHit.position);
+                        }
+                    }
+                    else
+                    {
+                        MoveGroupTo(navHit.position);
+                    }
                 }
             }
         }
     }
 
-    private System.Collections.IEnumerator ProcessCommandsCoroutine(Vector3 destination)
-    {
-        if (debugMode) Debug.Log($"Commanding {selectedMinions.Count} minions to {destination}");
-        
-        int processed = 0;
-        foreach (Minion minion in selectedMinions)
-        {
-            if (minion == null) continue;
-            
-            minion.ShowMoveMarker(destination);
-            processed++;
-            
-            // Yield every few minions to spread workload across frames
-            if (processed % 5 == 0)
-                yield return null;
-        }
-        
-        // Move minions
-        if (selectedMinions.Count == 1)
-        {
-            if (selectedMinions[0] != null)
-            {
-                selectedMinions[0].MoveTo(destination);
-            }
-        }
-        else
-        {
-            MoveGroupTo(destination);
-        }
-    }
-
     void SelectMinion(Minion minion)
     {
-        if (selectedMinions.Contains(minion)) return;
+        if (selectedMinions.Contains(minion)) 
+        {
+            if (debugMode) Debug.Log($"Minion {minion.gameObject.name} already selected");
+            return;
+        }
         
         selectedMinions.Add(minion);
         
-        // Apply selection material with caching
+        // Apply selection material
         if (selectedMaterial != null)
         {
             Renderer[] renderers = minion.GetComponentsInChildren<Renderer>();
@@ -342,11 +416,14 @@ public class UIRTSSystem : MonoBehaviour
         }
         
         minion.OnSelected();
+        
+        if (debugMode) Debug.Log($"Selected minion: {minion.gameObject.name}");
     }
 
     void ClearSelection()
     {
-        // Restore original materials using dictionary for faster lookups
+        if (debugMode) Debug.Log($"Clearing selection of {selectedMinions.Count} minions");
+        
         foreach (Minion minion in selectedMinions)
         {
             if (minion != null)
@@ -396,6 +473,70 @@ public class UIRTSSystem : MonoBehaviour
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
             {
                 selectedMinions[i].MoveTo(hit.position);
+            }
+        }
+    }
+
+    [ContextMenu("Test Top Screen Selection")]
+    void TestTopScreenSelection()
+    {
+        Debug.Log("=== TESTING TOP SCREEN SELECTION ===");
+        
+        // Create a test selection rectangle at the top of the screen
+        Rect testRect = new Rect(Screen.width * 0.25f, Screen.height * 0.75f, Screen.width * 0.5f, Screen.height * 0.2f);
+        Debug.Log($"Test Rect: {testRect}");
+        
+        int foundMinions = 0;
+        foreach (Minion minion in minionCache)
+        {
+            if (minion == null) continue;
+            
+            Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            Debug.Log($"Minion {minion.gameObject.name} at screen position: {screenPos}");
+            
+            if (testRect.Contains(new Vector2(screenPos.x, screenPos.y)))
+            {
+                Debug.Log($"MINION IN TEST RECT: {minion.gameObject.name}");
+                foundMinions++;
+            }
+        }
+        
+        Debug.Log($"Found {foundMinions} minions in top screen area");
+        Debug.Log("=== TEST COMPLETE ===");
+    }
+
+    [ContextMenu("Debug All Minion Positions")]
+    void DebugAllMinionPositions()
+    {
+        Debug.Log("=== MINION SCREEN POSITIONS ===");
+        foreach (Minion minion in minionCache)
+        {
+            if (minion == null) continue;
+            
+            Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            string status = screenPos.z > 0 ? "ON SCREEN" : "BEHIND CAMERA";
+            Debug.Log($"{minion.gameObject.name}: {screenPos} - {status}");
+        }
+        Debug.Log("=== END POSITIONS ===");
+    }
+
+    void OnDrawGizmos()
+    {
+        if (!drawDebugRays) return;
+        
+        // Draw debug rays from camera to minions
+        foreach (Minion minion in minionCache)
+        {
+            if (minion == null) continue;
+            
+            Vector3 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            if (screenPos.z > 0)
+            {
+                // Green if on screen, red if off screen
+                bool onScreen = screenPos.x >= 0 && screenPos.x <= Screen.width && 
+                               screenPos.y >= 0 && screenPos.y <= Screen.height;
+                Gizmos.color = onScreen ? Color.green : Color.red;
+                Gizmos.DrawLine(mainCamera.transform.position, minion.transform.position);
             }
         }
     }

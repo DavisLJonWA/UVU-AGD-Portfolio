@@ -8,12 +8,10 @@
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 5.4.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 5.4.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/IsometricCameraController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/IsometricCameraController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 5.3/NavMesh-Floor.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 5.3/NavMesh-Floor.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 6.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 6.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSController.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSController.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSSystem.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -143,7 +141,7 @@
       <workItem from="1761868964679" duration="2391000" />
       <workItem from="1761958209071" duration="1258000" />
       <workItem from="1762027241757" duration="1299000" />
-      <workItem from="1762028607537" duration="761000" />
+      <workItem from="1762028607537" duration="2660000" />
     </task>
     <servers />
   </component>

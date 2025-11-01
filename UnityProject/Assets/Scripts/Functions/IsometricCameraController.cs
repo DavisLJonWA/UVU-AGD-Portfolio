@@ -34,6 +34,8 @@ public class IsometricCameraController : MonoBehaviour
     private bool needsOffsetRecalculation = false;
     private Camera cam;
     private Transform myTransform;
+    
+    
 
     void Start()
     {
@@ -184,10 +186,26 @@ public class IsometricCameraController : MonoBehaviour
         cameraDistance = Mathf.Clamp(newDistance, minZoomDistance, maxZoomDistance);
         needsOffsetRecalculation = true;
     }
+    
+    
 
     // Public getters for external access
     public Vector3 GetTargetPosition() => targetPosition;
     public float GetAzimuthAngle() => azimuthAngle;
     public float GetAltitudeAngle() => altitudeAngle;
     public float GetCameraDistance() => cameraDistance;
+    
+    void OnDestroy()
+    {
+        // Reset smooth damp velocities to prevent memory leaks
+        velocity = Vector3.zero;
+        rotationVelocity = 0f;
+    }
+    
+    // Alternative: Reset in OnDisable as well for scene changes
+    void OnDisable()
+    {
+        velocity = Vector3.zero;
+        rotationVelocity = 0f;
+    }
 }

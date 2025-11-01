@@ -43,7 +43,7 @@ public class Minion : MonoBehaviour
         agent.speed = moveSpeed;
         agent.acceleration = 1000f;
         agent.angularSpeed = 360f;
-        agent.stoppingDistance = 10f;
+        agent.stoppingDistance = 0.5f;
         agent.radius = 0.5f;
         agent.height = 2f;
         agent.autoBraking = true;
