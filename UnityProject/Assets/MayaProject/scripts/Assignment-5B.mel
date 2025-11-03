@@ -1,0 +1,235 @@
+// =============================================
+// Calculator Sub-Functions for DAGV Assignment
+// =============================================
+
+// Helper function to convert float array to string for display
+global proc string arrayToString(float $array[]) {
+    string $result = "{";
+    for ($i = 0; $i < size($array); $i++) {
+        $result += string($array[$i]);
+        if ($i < size($array) - 1) {
+            $result += ", ";
+        }
+    }
+    $result += "}";
+    return $result;
+}
+
+// Sum (addition) of 2 or more float values
+global proc float calcSum(float $input[]) {
+    float $result = 0;
+    for ($i = 0; $i < size($input); $i++) {
+        $result += $input[$i];
+    }
+    return $result;
+}
+
+// Difference (subtraction) of 2 or more values
+global proc float calcDifference(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $result = $input[0];
+    for ($i = 1; $i < size($input); $i++) {
+        $result -= $input[$i];
+    }
+    return $result;
+}
+
+// Multiplication of 2 or more values
+global proc float calcMultiply(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $result = 1;
+    for ($i = 0; $i < size($input); $i++) {
+        $result *= $input[$i];
+    }
+    return $result;
+}
+
+// Division of 2 or more values
+global proc float calcDivide(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    // Check for division by zero
+    for ($i = 1; $i < size($input); $i++) {
+        if ($input[$i] == 0) {
+            error "Error: Division by zero is not allowed";
+            return 0;
+        }
+    }
+    
+    float $result = $input[0];
+    for ($i = 1; $i < size($input); $i++) {
+        $result /= $input[$i];
+    }
+    return $result;
+}
+
+// Power (x raised to power n)
+global proc float calcPower(float $input[]) {
+    if (size($input) < 2) {
+        error "Error: Power function requires at least 2 values (base and exponent)";
+        return 0;
+    }
+    
+    float $base = $input[0];
+    float $exponent = $input[1];
+    return pow($base, $exponent);
+}
+
+// Mean (or average)
+global proc float calcMean(float $input[]) {
+    if (size($input) == 0) {
+        return 0;
+    }
+    
+    float $sum = 0;
+    for ($i = 0; $i < size($input); $i++) {
+        $sum += $input[$i];
+    }
+    return $sum / size($input);
+}
+
+// Median
+global proc float calcMedian(float $input[]) {
+    int $size = size($input);
+    if ($size == 0) {
+        return 0;
+    }
+    
+    // Create a sorted copy of the array
+    float $sorted[] = $input;
+    
+    // Bubble sort implementation for MEL
+    for ($i = 0; $i < $size - 1; $i++) {
+        for ($j = 0; $j < $size - $i - 1; $j++) {
+            if ($sorted[$j] > $sorted[$j + 1]) {
+                // Swap elements
+                float $temp = $sorted[$j];
+                $sorted[$j] = $sorted[$j + 1];
+                $sorted[$j + 1] = $temp;
+            }
+        }
+    }
+    
+    // Calculate median
+    if ($size % 2 == 1) {
+        // Odd number of elements
+        return $sorted[$size / 2];
+    } else {
+        // Even number of elements
+        int $mid = $size / 2;
+        return ($sorted[$mid - 1] + $sorted[$mid]) / 2;
+    }
+}
+
+// =============================================
+// Calculator UI
+// =============================================
+
+global proc calculatorUI() {
+    // Delete window if it already exists
+    if (`window -exists calculatorWindow`) {
+        deleteUI calculatorWindow;
+    }
+    
+    // Create main window
+    window -title "Calculator" -widthHeight 400 300 calculatorWindow;
+    columnLayout -adjustableColumn true;
+    
+    // Input field for numbers
+    text -label "Enter numbers (comma separated):";
+    textField calculatorInputField;
+    
+    // Operation selection
+    text -label "Select operation:";
+    optionMenu calculatorOperationMenu;
+    menuItem -label "Sum";
+    menuItem -label "Difference";
+    menuItem -label "Multiply";
+    menuItem -label "Divide";
+    menuItem -label "Power";
+    menuItem -label "Mean";
+    menuItem -label "Median";
+    
+    // Calculate button
+    button -label "Calculate" -command "calculateOperation";
+    
+    // Separator
+    separator -width 400 -height 20;
+    
+    // Result display
+    text -label "Result:";
+    textField -editable false calculatorResultField;
+    
+    showWindow calculatorWindow;
+}
+
+// Control command function to handle calculation
+global proc calculateOperation() {
+    // Get input from text field
+    string $inputText = `textField -query -text calculatorInputField`;
+    string $operation = `optionMenu -query -value calculatorOperationMenu`;
+    
+    // Parse input string into float array
+    float $numbers[];
+    string $tokens[];
+    tokenize $inputText "," $tokens;
+    
+    for ($i = 0; $i < size($tokens); $i++) {
+        // Remove any whitespace and convert to float
+        string $cleanToken = `match "[0-9.-]+" $tokens[$i]`;
+        if ($cleanToken != "") {
+            $numbers[size($numbers)] = $cleanToken;
+        }
+    }
+    
+    // Perform calculation based on selected operation
+    float $result = 0;
+    string $resultText = "";
+    
+    if (size($numbers) == 0) {
+        $resultText = "Error: No valid numbers entered";
+    } else {
+        if ($operation == "Sum") {
+            $result = calcSum($numbers);
+            $resultText = string($result);
+        } else if ($operation == "Difference") {
+            $result = calcDifference($numbers);
+            $resultText = string($result);
+        } else if ($operation == "Multiply") {
+            $result = calcMultiply($numbers);
+            $resultText = string($result);
+        } else if ($operation == "Divide") {
+            $result = calcDivide($numbers);
+            $resultText = string($result);
+        } else if ($operation == "Power") {
+            if (size($numbers) >= 2) {
+                $result = calcPower($numbers);
+                $resultText = string($result);
+            } else {
+                $resultText = "Error: Power requires at least 2 numbers";
+            }
+        } else if ($operation == "Mean") {
+            $result = calcMean($numbers);
+            $resultText = string($result);
+        } else if ($operation == "Median") {
+            $result = calcMedian($numbers);
+            $resultText = string($result);
+        }
+    }
+    
+    // Display result
+    textField -edit -text $resultText calculatorResultField;
+}
+
+// =============================================
+// Example call to launch the UI
+// =============================================
+calculatorUI();
