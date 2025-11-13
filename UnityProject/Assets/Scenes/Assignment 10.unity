@@ -185,6 +185,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Minion
   moveSpeed: 200
   moveMarkerPrefab: {fileID: 997137844}
+  spawnParticles: {fileID: 0}
+  spawnSound: {fileID: 0}
+  spawnInvulnerabilityTime: 2
+  selectionIndicator: {fileID: 0}
 --- !u!4 &868530 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 41f081d5c6d286c47a33bed3f84de79a, type: 3}
@@ -9882,6 +9886,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Minion
   moveSpeed: 200
   moveMarkerPrefab: {fileID: 997137844}
+  spawnParticles: {fileID: 0}
+  spawnSound: {fileID: 0}
+  spawnInvulnerabilityTime: 2
+  selectionIndicator: {fileID: 0}
 --- !u!143 &1336603249
 CharacterController:
   m_ObjectHideFlags: 0
@@ -12587,6 +12595,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 220196721}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1959795789
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1959795790}
+  m_Layer: 0
+  m_Name: Buildings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1959795790
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1959795789}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -557.47205, y: -35.58447, z: -60.33191}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1977166540
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13586,6 +13625,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Minion
   moveSpeed: 200
   moveMarkerPrefab: {fileID: 997137844}
+  spawnParticles: {fileID: 0}
+  spawnSound: {fileID: 0}
+  spawnInvulnerabilityTime: 2
+  selectionIndicator: {fileID: 0}
 --- !u!143 &2094465734
 CharacterController:
   m_ObjectHideFlags: 0
@@ -14098,3 +14141,4 @@ SceneRoots:
   - {fileID: 220196721}
   - {fileID: 1267485236}
   - {fileID: 436281332}
+  - {fileID: 1959795790}

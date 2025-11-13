@@ -5,30 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c194b7f-d35c-41f1-b7b8-0ef4459cfed0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Base_color.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Base_color.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Height.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Height.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Height_Raw_ACEScg.png.tx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Height_Raw_ACEScg.png.tx.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Metallic.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Metallic.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Metallic_Raw_ACEScg.png.tx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Metallic_Raw_ACEScg.png.tx.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Mixed_AO.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Mixed_AO.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Normal.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Normal.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Normal_OpenGL.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Normal_OpenGL.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Roughness.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/Textures/FancyTable/standardSurface1_Roughness.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/fbx-exports/FancyTable.fbx" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/MayaProject/fbx-exports/FancyTable.fbx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/fbx-exports/Wall270.fbx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/fbx-exports/Wall90.fbx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/fbx-exports/WallFlat.fbx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/scenes/Unit10-ComplexModels-V1.ma" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/MayaProject/scenes/Unit10-ComplexModels-V1.ma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 9.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 9.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,20 +21,23 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/BuildingSelectionHandler.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CanvasScreenSpaceFix.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CoinCollector.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CompareIntData.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/IsometricCameraController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/OnWinDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/PuzzleEffects.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/PuzzleManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/PuzzleSwitch.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/RTSSystem.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/RecruitmentBuilding.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/ScoreDisplay.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SelectionUICanvas.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SimplePuzzleSwitch.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SimpleWinCondition.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SwitchDebugger.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SwitchDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/WinTextDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.render-pipelines.universal@1e1527b3a17b/Shaders/Lit.shader" root0="SKIP_HIGHLIGHTING" />
@@ -159,6 +144,8 @@
       <workItem from="1762027241757" duration="1299000" />
       <workItem from="1762028607537" duration="3835000" />
       <workItem from="1762380361350" duration="136000" />
+      <workItem from="1762735584604" duration="1395000" />
+      <workItem from="1762988746796" duration="2592000" />
     </task>
     <servers />
   </component>
