@@ -8,9 +8,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/MayaProject/scenes/Unit10-ComplexModels-V1.ma" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/MayaProject/scenes/Unit10-ComplexModels-V1.ma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 9.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 9.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 6/NavMesh-Floor.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 6/NavMesh-Floor.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/SOs/MinionHealth.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/SOs/MinionHealth.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +25,7 @@
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CanvasScreenSpaceFix.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CoinCollector.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CompareIntData.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/DirectWinTest.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/IsometricCameraController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/OnWinDebugger.cs" root0="FORCE_HIGHLIGHTING" />
@@ -145,7 +146,8 @@
       <workItem from="1762028607537" duration="3835000" />
       <workItem from="1762380361350" duration="136000" />
       <workItem from="1762735584604" duration="1395000" />
-      <workItem from="1762988746796" duration="2592000" />
+      <workItem from="1762988746796" duration="2915000" />
+      <workItem from="1763500099089" duration="2950000" />
     </task>
     <servers />
   </component>
