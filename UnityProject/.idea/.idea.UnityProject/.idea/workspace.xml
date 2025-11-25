@@ -5,12 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c194b7f-d35c-41f1-b7b8-0ef4459cfed0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityProject/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/ArtisanDream.Tools/InputSystem/GameInputs.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 6/NavMesh-Floor.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 6/NavMesh-Floor.asset.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scripts/SOs/MinionHealth.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/SOs/MinionHealth.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Assignment 8 Health and Combat/NavMesh-Floor.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Assignment 8 Health and Combat/NavMesh-Floor.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/RTSSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,13 +21,18 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/AIController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/AIManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/BuildingSelectionHandler.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CanvasScreenSpaceFix.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CoinCollector.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/CompareIntData.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/DirectWinTest.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/Health.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/HealthBar.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/IsometricCameraController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/Minion.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/MinionMovement.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/OnWinDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/PuzzleEffects.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/PuzzleManager.cs" root0="FORCE_HIGHLIGHTING" />
@@ -40,6 +45,7 @@
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SimpleWinCondition.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/SwitchDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/UIRTSSystem.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/UnitCombat.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Functions/WinTextDebugger.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.render-pipelines.universal@1e1527b3a17b/Shaders/Lit.shader" root0="SKIP_HIGHLIGHTING" />
   </component>
@@ -148,6 +154,7 @@
       <workItem from="1762735584604" duration="1395000" />
       <workItem from="1762988746796" duration="2915000" />
       <workItem from="1763500099089" duration="2950000" />
+      <workItem from="1764033308880" duration="13268000" />
     </task>
     <servers />
   </component>
