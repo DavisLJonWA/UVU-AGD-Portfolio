@@ -1,4 +1,3 @@
-// NewCombatSystem.cs - Replace UnitCombat with this
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,38 +9,38 @@ public class UnitCombat : MonoBehaviour
     [SerializeField] private float attackSpeed = 1f;
     [SerializeField] private float attackRange = 2f;
     [SerializeField] private float visionRange = 8f;
-    
+
     [Header("Target Settings")]
-    [SerializeField] private LayerMask enemyLayerMask = -1; // All layers by default
+    [SerializeField] private LayerMask enemyLayerMask = 1 << 7 | 1 << 9;
     [SerializeField] private bool canAttackBuildings = true;
     [SerializeField] private bool autoAcquireTargets = true;
+    [SerializeField] private float autoAttackDelay = 2f;
 
     [Header("Visual Feedback")]
     [SerializeField] private GameObject attackEffect;
     [SerializeField] private AudioClip attackSound;
     [SerializeField] private Material enemyHighlightMaterial;
-    [SerializeField] private Color enemyHighlightColor = Color.red;
 
-    // Components
     private Health myHealth;
     private Team myTeam;
     private MinionMovement movement;
     private AudioSource audioSource;
-    
-    // Combat state
+
     private Health currentTarget;
     private bool isAttacking = false;
     private Coroutine attackCoroutine;
-    
-    // Highlighting
+    private Coroutine autoAttackCoroutine;
+    private bool isInAttackRange = false;
+    private bool movementOverride = false;
+
     private Dictionary<Renderer, Material[]> originalTargetMaterials = new Dictionary<Renderer, Material[]>();
-    
-    // Debug
-    private bool debugCombat = true;
 
     public Health GetTarget() => currentTarget;
     public bool HasTarget() => currentTarget != null && currentTarget.IsAlive();
     public float GetAttackRange() => attackRange;
+    public bool IsAttacking() => isAttacking;
+    public bool IsMovementOverride() => movementOverride;
+    public bool IsInAttackRange() => isInAttackRange;
 
     void Awake()
     {
@@ -49,121 +48,203 @@ public class UnitCombat : MonoBehaviour
         myTeam = GetComponent<Team>();
         movement = GetComponent<MinionMovement>();
         audioSource = GetComponent<AudioSource>();
-
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.spatialBlend = 1f;
         }
-
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} initialized - Team: {myTeam.GetTeam()}");
     }
 
     void Update()
     {
-        if (!myHealth.IsAlive()) return;
+        if (!myHealth.IsAlive() || movementOverride)
+        {
+            if (movementOverride && isAttacking)
+            {
+                if (attackCoroutine != null)
+                {
+                    StopCoroutine(attackCoroutine);
+                    isAttacking = false;
+                }
+            }
+            return;
+        }
 
         if (autoAcquireTargets && !HasTarget())
         {
-            FindAndSetTarget();
+            if (autoAttackCoroutine == null)
+            {
+                autoAttackCoroutine = StartCoroutine(DelayedAutoAcquire());
+            }
         }
 
-        if (HasTarget())
+        if (HasTarget() && !movementOverride)
         {
             HandleCombatState();
         }
     }
 
+    IEnumerator DelayedAutoAcquire()
+    {
+        yield return new WaitForSeconds(autoAttackDelay);
+
+        if (!HasTarget() && !movementOverride)
+        {
+            FindAndSetTarget();
+        }
+
+        autoAttackCoroutine = null;
+    }
+
     void HandleCombatState()
     {
-        // Check target validity
-        if (!currentTarget.IsAlive())
+        if (!HasTarget() || movementOverride)
         {
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} target died");
             ClearTarget();
             return;
         }
 
-        float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
-        
-        if (distanceToTarget > attackRange)
+        // Calculate distance to target - for buildings, use the closest point on their collider
+        float distanceToTarget;
+        if (currentTarget.GetComponent<RecruitmentBuilding>() != null)
         {
-            // Move toward target
-            if (movement != null)
+            // For buildings, check distance to the closest point on the building's collider
+            Collider buildingCollider = currentTarget.GetComponent<Collider>();
+            if (buildingCollider != null)
             {
-                movement.MoveTo(currentTarget.transform.position);
+                Vector3 closestPoint = buildingCollider.ClosestPoint(transform.position);
+                distanceToTarget = Vector3.Distance(transform.position, closestPoint);
             }
-            
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} moving to target - Distance: {distanceToTarget}");
+            else
+            {
+                distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+            }
         }
         else
         {
-            // In range - stop moving and attack
+            // For minions, use center position
+            distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+        }
+        
+        isInAttackRange = distanceToTarget <= attackRange;
+
+        if (!isInAttackRange && !movementOverride)
+        {
+            if (movement != null)
+            {
+                // For buildings, move to the closest point on the navmesh near the building
+                if (currentTarget.GetComponent<RecruitmentBuilding>() != null)
+                {
+                    Vector3 targetPosition = currentTarget.transform.position;
+                    Collider buildingCollider = currentTarget.GetComponent<Collider>();
+                    if (buildingCollider != null)
+                    {
+                        // Get a point on the navmesh near the building
+                        Vector3 closestPoint = buildingCollider.ClosestPoint(transform.position);
+                        targetPosition = closestPoint;
+                    }
+                    movement.MoveToAttackTarget(targetPosition);
+                }
+                else
+                {
+                    movement.MoveToAttackTarget(currentTarget.transform.position);
+                }
+            }
+
+            if (isAttacking)
+            {
+                if (attackCoroutine != null)
+                {
+                    StopCoroutine(attackCoroutine);
+                    isAttacking = false;
+                }
+            }
+        }
+        else if (!movementOverride)
+        {
             if (movement != null)
             {
                 movement.StopMoving();
             }
-            
+
             FaceTarget();
-            
+
             if (!isAttacking)
             {
                 attackCoroutine = StartCoroutine(AttackRoutine());
             }
-            
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} in attack range - Attacking");
         }
     }
 
-    public void SetTarget(Health newTarget)
+    public void ForceAttackTarget(Health target)
     {
-        if (newTarget == null)
-        {
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} cannot set null target");
-            return;
-        }
+        if (target == null || !target.IsAlive()) return;
 
-        if (!newTarget.IsAlive())
-        {
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} cannot set dead target: {newTarget.gameObject.name}");
-            return;
-        }
+        Team targetTeam = target.GetComponent<Team>();
+        if (targetTeam == null || !Team.AreEnemies(myTeam, targetTeam)) return;
 
-        // Check if target is enemy
-        Team targetTeam = newTarget.GetComponent<Team>();
-        if (targetTeam == null)
-        {
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} target has no Team component: {newTarget.gameObject.name}");
-            return;
-        }
+        // Check if it's a building and we can attack buildings
+        if (target.GetComponent<RecruitmentBuilding>() != null && !canAttackBuildings) return;
 
-        if (!Team.AreEnemies(myTeam, targetTeam))
-        {
-            if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} cannot attack {newTarget.gameObject.name} - not enemy team");
-            return;
-        }
-
-        // Clear previous target
+        SetMovementOverride(false);
         ClearTarget();
-
-        // Set new target
-        currentTarget = newTarget;
+        
+        currentTarget = target;
         HighlightTarget(currentTarget.gameObject);
 
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} acquired target: {currentTarget.gameObject.name} (Team: {targetTeam.GetTeam()})");
-
-        // Stop any current attack
         if (attackCoroutine != null)
         {
             StopCoroutine(attackCoroutine);
             isAttacking = false;
         }
+
+        isInAttackRange = false;
+    }
+
+    public void SetTarget(Health newTarget)
+    {
+        if (newTarget == null || movementOverride || !newTarget.IsAlive()) return;
+
+        Team targetTeam = newTarget.GetComponent<Team>();
+        if (targetTeam == null || !Team.AreEnemies(myTeam, targetTeam)) return;
+
+        // Check if it's a building and we can attack buildings
+        if (newTarget.GetComponent<RecruitmentBuilding>() != null && !canAttackBuildings) return;
+
+        ClearTarget();
+        currentTarget = newTarget;
+        HighlightTarget(currentTarget.gameObject);
+
+        if (attackCoroutine != null)
+        {
+            StopCoroutine(attackCoroutine);
+            isAttacking = false;
+        }
+
+        isInAttackRange = false;
+    }
+
+    public void SetMovementOverride(bool overrideCombat)
+    {
+        movementOverride = overrideCombat;
+
+        if (movementOverride)
+        {
+            ClearTarget();
+            if (autoAttackCoroutine != null)
+            {
+                StopCoroutine(autoAttackCoroutine);
+                autoAttackCoroutine = null;
+            }
+        }
     }
 
     void FindAndSetTarget()
     {
+        if (movementOverride) return;
+
         Collider[] potentialTargets = Physics.OverlapSphere(transform.position, visionRange, enemyLayerMask);
-        
+
         Health bestTarget = null;
         float closestDistance = Mathf.Infinity;
 
@@ -175,7 +256,6 @@ public class UnitCombat : MonoBehaviour
             Team targetTeam = potentialTarget.GetComponent<Team>();
             if (targetTeam == null || !Team.AreEnemies(myTeam, targetTeam)) continue;
 
-            // Check if it's a building and we can attack buildings
             if (potentialTarget.GetComponent<RecruitmentBuilding>() != null && !canAttackBuildings) continue;
 
             float distance = Vector3.Distance(transform.position, potentialTarget.transform.position);
@@ -199,7 +279,6 @@ public class UnitCombat : MonoBehaviour
         Renderer[] targetRenderers = target.GetComponentsInChildren<Renderer>();
         foreach (Renderer renderer in targetRenderers)
         {
-            // Skip health bar renderers
             if (renderer.gameObject.name.Contains("HealthBar")) continue;
 
             Material[] originalMats = new Material[renderer.materials.Length];
@@ -207,30 +286,19 @@ public class UnitCombat : MonoBehaviour
             {
                 originalMats[i] = renderer.materials[i];
             }
-            
+
             originalTargetMaterials[renderer] = originalMats;
 
-            // Apply highlight
-            Material[] highlightMats = new Material[renderer.materials.Length];
-            for (int i = 0; i < highlightMats.Length; i++)
+            if (enemyHighlightMaterial != null)
             {
-                if (enemyHighlightMaterial != null)
+                Material[] highlightMats = new Material[renderer.materials.Length];
+                for (int i = 0; i < highlightMats.Length; i++)
                 {
                     highlightMats[i] = enemyHighlightMaterial;
                 }
-                else
-                {
-                    // Create temporary highlight material
-                    Material highlightMat = new Material(Shader.Find("Standard"));
-                    highlightMat.color = enemyHighlightColor;
-                    highlightMats[i] = highlightMat;
-                }
+                renderer.materials = highlightMats;
             }
-            
-            renderer.materials = highlightMats;
         }
-
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} highlighted target: {target.name}");
     }
 
     void ClearTargetHighlight()
@@ -247,9 +315,29 @@ public class UnitCombat : MonoBehaviour
 
     void FaceTarget()
     {
-        if (currentTarget == null) return;
+        if (currentTarget == null || movementOverride) return;
+
+        Vector3 direction;
         
-        Vector3 direction = (currentTarget.transform.position - transform.position).normalized;
+        // For buildings, face towards the closest point on the building
+        if (currentTarget.GetComponent<RecruitmentBuilding>() != null)
+        {
+            Collider buildingCollider = currentTarget.GetComponent<Collider>();
+            if (buildingCollider != null)
+            {
+                Vector3 closestPoint = buildingCollider.ClosestPoint(transform.position);
+                direction = (closestPoint - transform.position).normalized;
+            }
+            else
+            {
+                direction = (currentTarget.transform.position - transform.position).normalized;
+            }
+        }
+        else
+        {
+            direction = (currentTarget.transform.position - transform.position).normalized;
+        }
+        
         direction.y = 0;
         if (direction != Vector3.zero)
         {
@@ -260,62 +348,58 @@ public class UnitCombat : MonoBehaviour
     IEnumerator AttackRoutine()
     {
         isAttacking = true;
-        
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} started attack routine");
 
-        while (HasTarget() && !IsTargetOutOfRange())
+        while (HasTarget() && isInAttackRange && !movementOverride && myHealth.IsAlive())
         {
-            PerformAttack();
-            yield return new WaitForSeconds(1f / attackSpeed);
+            if (currentTarget.IsAlive())
+            {
+                PerformAttack();
+                yield return new WaitForSeconds(1f / attackSpeed);
+            }
+            else
+            {
+                ClearTarget();
+                break;
+            }
         }
 
         isAttacking = false;
-        
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} ended attack routine");
     }
 
     void PerformAttack()
     {
-        if (!HasTarget()) return;
+        if (!HasTarget() || movementOverride) return;
 
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} attacking {currentTarget.gameObject.name} for {attackDamage} damage");
-
-        // Visual effects
         if (attackEffect != null)
         {
             Instantiate(attackEffect, currentTarget.transform.position, Quaternion.identity);
         }
 
-        // Sound effects
         if (attackSound != null)
         {
             audioSource.PlayOneShot(attackSound);
         }
 
-        // Apply damage
         currentTarget.TakeDamage(attackDamage, gameObject);
-    }
-
-    bool IsTargetOutOfRange()
-    {
-        if (currentTarget == null) return true;
-        float distance = Vector3.Distance(transform.position, currentTarget.transform.position);
-        return distance > attackRange;
     }
 
     public void ClearTarget()
     {
         ClearTargetHighlight();
-        
+
         if (attackCoroutine != null)
         {
             StopCoroutine(attackCoroutine);
             isAttacking = false;
         }
-        
+
         currentTarget = null;
-        
-        if (debugCombat) Debug.Log($"[COMBAT] {gameObject.name} cleared target");
+        isInAttackRange = false;
+    }
+
+    public void OnKilledUnit(GameObject killedUnit)
+    {
+        ClearTarget();
     }
 
     void OnDestroy()
@@ -323,43 +407,36 @@ public class UnitCombat : MonoBehaviour
         ClearTarget();
     }
 
-    [ContextMenu("Debug Combat Status")]
-    void DebugCombatStatus()
-    {
-        Debug.Log($"=== COMBAT DEBUG: {gameObject.name} ===");
-        Debug.Log($"Alive: {myHealth.IsAlive()}");
-        Debug.Log($"Has Target: {HasTarget()}");
-        Debug.Log($"Target: {(currentTarget != null ? currentTarget.gameObject.name : "None")}");
-        Debug.Log($"Is Attacking: {isAttacking}");
-        Debug.Log($"Attack Range: {attackRange}");
-        Debug.Log($"Team: {myTeam.GetTeam()}");
-        
-        if (currentTarget != null)
-        {
-            Team targetTeam = currentTarget.GetComponent<Team>();
-            Debug.Log($"Target Team: {(targetTeam != null ? targetTeam.GetTeam().ToString() : "No Team")}");
-            Debug.Log($"Distance: {Vector3.Distance(transform.position, currentTarget.transform.position)}");
-            Debug.Log($"In Range: {!IsTargetOutOfRange()}");
-        }
-        
-        Debug.Log($"=== END COMBAT DEBUG ===");
-    }
-
     void OnDrawGizmosSelected()
     {
-        // Attack range
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
-        
-        // Vision range
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, visionRange);
-        
-        // Line to target
+
         if (currentTarget != null)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(transform.position, currentTarget.transform.position);
+            Gizmos.color = movementOverride ? Color.blue : Color.red;
+            
+            // For buildings, draw line to closest point on building
+            if (currentTarget.GetComponent<RecruitmentBuilding>() != null)
+            {
+                Collider buildingCollider = currentTarget.GetComponent<Collider>();
+                if (buildingCollider != null)
+                {
+                    Vector3 closestPoint = buildingCollider.ClosestPoint(transform.position);
+                    Gizmos.DrawLine(transform.position, closestPoint);
+                }
+                else
+                {
+                    Gizmos.DrawLine(transform.position, currentTarget.transform.position);
+                }
+            }
+            else
+            {
+                Gizmos.DrawLine(transform.position, currentTarget.transform.position);
+            }
         }
     }
 }

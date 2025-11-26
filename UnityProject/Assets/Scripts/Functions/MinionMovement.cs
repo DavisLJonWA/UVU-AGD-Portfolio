@@ -1,4 +1,3 @@
-// MinionMovement.cs (Fixed)
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
@@ -7,7 +6,7 @@ public class MinionMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 3.5f;
-    [SerializeField] private float acceleration = 8f; // Made this serialized
+    [SerializeField] private float acceleration = 8f;
     [SerializeField] private float angularSpeed = 360f;
     [SerializeField] private GameObject moveMarkerPrefab;
     [SerializeField] private GameObject attackMarkerPrefab;
@@ -17,8 +16,11 @@ public class MinionMovement : MonoBehaviour
     private GameObject currentMoveMarker;
     private GameObject currentAttackMarker;
     private Coroutine hideMarkerCoroutine;
+    private Vector3 lastDestination;
+    private bool hasReachedDestination = false;
 
     public bool IsMoving => agent != null && agent.hasPath && agent.remainingDistance > stoppingDistance;
+    public bool HasReachedDestination => hasReachedDestination;
 
     void Awake()
     {
@@ -27,7 +29,7 @@ public class MinionMovement : MonoBehaviour
         {
             agent = gameObject.AddComponent<NavMeshAgent>();
         }
-        
+
         ConfigureAgent();
         CreateMarkers();
     }
@@ -35,10 +37,10 @@ public class MinionMovement : MonoBehaviour
     void ConfigureAgent()
     {
         if (agent == null) return;
-        
+
         agent.speed = moveSpeed;
-        agent.acceleration = acceleration; // Now uses serialized field
-        agent.angularSpeed = angularSpeed; // Now uses serialized field
+        agent.acceleration = acceleration;
+        agent.angularSpeed = angularSpeed;
         agent.stoppingDistance = stoppingDistance;
         agent.radius = 0.5f;
         agent.height = 2f;
@@ -54,7 +56,7 @@ public class MinionMovement : MonoBehaviour
             currentMoveMarker = Instantiate(moveMarkerPrefab);
             currentMoveMarker.SetActive(false);
         }
-        
+
         if (attackMarkerPrefab != null)
         {
             currentAttackMarker = Instantiate(attackMarkerPrefab);
@@ -66,24 +68,45 @@ public class MinionMovement : MonoBehaviour
     {
         if (agent == null || !agent.isActiveAndEnabled) return;
 
-        // Clear any combat target when given move command
         UnitCombat combat = GetComponent<UnitCombat>();
         if (combat != null)
         {
+            combat.SetMovementOverride(true);
             combat.ClearTarget();
         }
 
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 2f, NavMesh.AllAreas))
         {
             agent.SetDestination(hit.position);
+            lastDestination = hit.position;
+            hasReachedDestination = false;
             ShowMoveMarker(hit.position);
-            Debug.Log($"{gameObject.name} moving to: {hit.position}");
         }
         else
         {
-            Debug.LogWarning($"{gameObject.name} cannot find valid path to {destination}");
             agent.SetDestination(destination);
+            lastDestination = destination;
+            hasReachedDestination = false;
             ShowMoveMarker(destination);
+        }
+    }
+
+    public void MoveToAttackTarget(Vector3 targetPosition)
+    {
+        if (agent == null || !agent.isActiveAndEnabled) return;
+
+        // For attack movements, don't set movement override - allow combat to continue
+        if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            agent.SetDestination(hit.position);
+            lastDestination = hit.position;
+            hasReachedDestination = false;
+        }
+        else
+        {
+            agent.SetDestination(targetPosition);
+            lastDestination = targetPosition;
+            hasReachedDestination = false;
         }
     }
 
@@ -97,40 +120,36 @@ public class MinionMovement : MonoBehaviour
 
     public void ShowMoveMarker(Vector3 position)
     {
-        // Hide attack marker if showing
         if (currentAttackMarker != null && currentAttackMarker.activeInHierarchy)
         {
             currentAttackMarker.SetActive(false);
         }
-        
+
         if (currentMoveMarker != null)
         {
             currentMoveMarker.transform.position = position + Vector3.up * 0.1f;
             currentMoveMarker.SetActive(true);
-            
             if (hideMarkerCoroutine != null)
                 StopCoroutine(hideMarkerCoroutine);
-                
+
             hideMarkerCoroutine = StartCoroutine(HideMarkerAfterDelay(3f));
         }
     }
-    
+
     public void ShowAttackMarker(Vector3 position)
     {
-        // Hide move marker if showing
         if (currentMoveMarker != null && currentMoveMarker.activeInHierarchy)
         {
             currentMoveMarker.SetActive(false);
         }
-        
+
         if (currentAttackMarker != null)
         {
             currentAttackMarker.transform.position = position + Vector3.up * 0.1f;
             currentAttackMarker.SetActive(true);
-            
             if (hideMarkerCoroutine != null)
                 StopCoroutine(hideMarkerCoroutine);
-                
+
             hideMarkerCoroutine = StartCoroutine(HideMarkerAfterDelay(3f));
         }
     }
@@ -138,30 +157,54 @@ public class MinionMovement : MonoBehaviour
     private IEnumerator HideMarkerAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
+
         if (currentMoveMarker != null)
         {
             currentMoveMarker.SetActive(false);
         }
+
         if (currentAttackMarker != null)
         {
             currentAttackMarker.SetActive(false);
         }
+
         hideMarkerCoroutine = null;
     }
 
     void Update()
     {
-        // If we have a combat target and it's moving, update our destination
-        UnitCombat combat = GetComponent<UnitCombat>();
-        if (combat != null && combat.HasTarget())
+        if (agent.hasPath && agent.remainingDistance <= agent.stoppingDistance && !hasReachedDestination)
         {
-            Health target = combat.GetTarget();
+            hasReachedDestination = true;
+
+            UnitCombat combat = GetComponent<UnitCombat>();
+            if (combat != null)
+            {
+                combat.SetMovementOverride(false);
+            }
+        }
+
+        UnitCombat combatCheck = GetComponent<UnitCombat>();
+        if (combatCheck != null && combatCheck.HasTarget())
+        {
+            Health target = combatCheck.GetTarget();
             if (target != null && target.IsAlive())
             {
-                // Only update path if target has moved significantly
-                if (agent.hasPath && Vector3.Distance(agent.destination, target.transform.position) > 1f)
+                // For buildings, recalculate path to closest point
+                Vector3 targetPosition = target.transform.position;
+                if (target.GetComponent<RecruitmentBuilding>() != null)
                 {
-                    agent.SetDestination(target.transform.position);
+                    Collider buildingCollider = target.GetComponent<Collider>();
+                    if (buildingCollider != null)
+                    {
+                        targetPosition = buildingCollider.ClosestPoint(transform.position);
+                    }
+                }
+
+                if (agent.hasPath && Vector3.Distance(agent.destination, targetPosition) > 1f &&
+                    !combatCheck.IsInAttackRange())
+                {
+                    agent.SetDestination(targetPosition);
                 }
             }
         }
@@ -171,10 +214,10 @@ public class MinionMovement : MonoBehaviour
     {
         if (hideMarkerCoroutine != null)
             StopCoroutine(hideMarkerCoroutine);
-            
+
         if (currentMoveMarker != null)
             Destroy(currentMoveMarker);
-            
+
         if (currentAttackMarker != null)
             Destroy(currentAttackMarker);
     }

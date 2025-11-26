@@ -1,3 +1,4 @@
+// In RTSSystem.cs - Replace the entire class with this simplified version
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
@@ -6,310 +7,264 @@ using System.Collections.Generic;
 
 public class RTSSystem : MonoBehaviour
 {
-   [Header("Selection Settings")]
-   [SerializeField] private LayerMask selectableLayer = 1 << 6;
-   [SerializeField] private LayerMask groundLayer = 1 << 7;
-   [SerializeField] private Material selectedMaterial;
+    [Header("Selection Settings")]
+    [SerializeField] private LayerMask selectableLayer = 1 << 6;
+    [SerializeField] private LayerMask groundLayer = 1 << 7;
+    [SerializeField] private Material selectedMaterial;
   
-   [Header("UI References")]
-   [SerializeField] private RectTransform selectionBox;
-   [SerializeField] private Canvas canvas;
+    [Header("UI References")]
+    [SerializeField] private RectTransform selectionBox;
+    [SerializeField] private Canvas canvas;
   
-   [Header("Selection Thresholds")]
-   [SerializeField] private float clickDragThreshold = 20f;
+    [Header("Selection Thresholds")]
+    [SerializeField] private float clickDragThreshold = 20f;
 
-   [Header("Team Settings")]
-   [SerializeField] private TeamAffiliation playerTeam = TeamAffiliation.Team1;
+    [Header("Team Settings")]
+    [SerializeField] private TeamAffiliation playerTeam = TeamAffiliation.Team1;
   
-   [Header("Debug")]
-   [SerializeField] private bool debugMode = true;
+    [Header("Debug")]
+    [SerializeField] private bool debugMode = true;
   
-   private List<Minion> selectedMinions = new List<Minion>();
-   private List<Material[]> originalMaterials = new List<Material[]>();
-   private Camera mainCamera;
-   private Vector2 selectionStart;
-   private bool isSelecting = false;
+    private List<Minion> selectedMinions = new List<Minion>();
+    private List<Renderer[]> originalRenderers = new List<Renderer[]>();
+    private List<Material[][]> originalMaterials = new List<Material[][]>();
+    private Camera mainCamera;
+    private Vector2 selectionStart;
+    private bool isSelecting = false;
 
-
-   void Start()
-   {
-       mainCamera = Camera.main;
+    void Start()
+    {
+        mainCamera = Camera.main;
       
-       if (canvas == null)
-       {
-           canvas = FindObjectOfType<Canvas>();
-           if (canvas == null) CreateCanvas();
-       }
+        if (canvas == null)
+        {
+            canvas = FindObjectOfType<Canvas>();
+            if (canvas == null) CreateCanvas();
+        }
       
-       if (selectionBox == null)
-       {
-           CreateSelectionBox();
-       }
-       else
-       {
-           selectionBox.gameObject.SetActive(false);
-       }
+        if (selectionBox == null)
+        {
+            CreateSelectionBox();
+        }
+        else
+        {
+            selectionBox.gameObject.SetActive(false);
+        }
       
-       if (debugMode) Debug.Log("RTSSystem initialized");
-   }
+        if (debugMode) Debug.Log("RTSSystem initialized");
+    }
 
+    void CreateCanvas()
+    {
+        GameObject canvasObj = new GameObject("SelectionCanvas");
+        canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvasObj.AddComponent<CanvasScaler>();
+        canvasObj.AddComponent<GraphicRaycaster>();
+    }
 
-   void CreateCanvas()
-   {
-       GameObject canvasObj = new GameObject("SelectionCanvas");
-       canvas = canvasObj.AddComponent<Canvas>();
-       canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-       canvasObj.AddComponent<CanvasScaler>();
-       canvasObj.AddComponent<GraphicRaycaster>();
-   }
+    void CreateSelectionBox()
+    {
+        if (canvas == null) return;
 
-
-   void CreateSelectionBox()
-   {
-       if (canvas == null) return;
-
-
-       GameObject boxObj = new GameObject("SelectionBox");
-       boxObj.transform.SetParent(canvas.transform);
-       boxObj.transform.SetAsLastSibling();
+        GameObject boxObj = new GameObject("SelectionBox");
+        boxObj.transform.SetParent(canvas.transform);
+        boxObj.transform.SetAsLastSibling();
       
-       selectionBox = boxObj.AddComponent<RectTransform>();
-       Image boxImage = boxObj.AddComponent<Image>();
+        selectionBox = boxObj.AddComponent<RectTransform>();
+        Image boxImage = boxObj.AddComponent<Image>();
       
-       boxImage.color = new Color(0.2f, 0.4f, 1f, 0.4f);
+        boxImage.color = new Color(0.2f, 0.4f, 1f, 0.4f);
       
-       Outline outline = boxObj.AddComponent<Outline>();
-       outline.effectColor = Color.blue;
-       outline.effectDistance = new Vector2(1, -1);
+        Outline outline = boxObj.AddComponent<Outline>();
+        outline.effectColor = Color.blue;
+        outline.effectDistance = new Vector2(1, -1);
       
-       selectionBox.anchorMin = Vector2.zero;
-       selectionBox.anchorMax = Vector2.zero;
-       selectionBox.pivot = Vector2.zero;
+        selectionBox.anchorMin = Vector2.zero;
+        selectionBox.anchorMax = Vector2.zero;
+        selectionBox.pivot = Vector2.zero;
       
-       selectionBox.gameObject.SetActive(false);
-   }
+        selectionBox.gameObject.SetActive(false);
+    }
 
+    void Update()
+    {
+        HandleSelectionInput();
+        HandleCommands();
+    }
 
-   void Update()
-   {
-       HandleSelectionInput();
-       HandleCommands();
-   }
+    void HandleSelectionInput()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            StartSelection();
+        }
 
+        if (Input.GetMouseButton(0) && isSelecting)
+        {
+            UpdateSelectionBox();
+        }
 
-   void HandleSelectionInput()
-   {
-       if (Input.GetMouseButtonDown(0))
-       {
-           StartSelection();
-       }
+        if (Input.GetMouseButtonUp(0) && isSelecting)
+        {
+            EndSelection();
+        }
+    }
 
-
-       if (Input.GetMouseButton(0) && isSelecting)
-       {
-           UpdateSelectionBox();
-       }
-
-
-       if (Input.GetMouseButtonUp(0) && isSelecting)
-       {
-           EndSelection();
-       }
-   }
-
-
-   void StartSelection()
-   {
-       selectionStart = Input.mousePosition;
-       isSelecting = true;
+    void StartSelection()
+    {
+        selectionStart = Input.mousePosition;
+        isSelecting = true;
       
-       if (selectionBox != null)
-       {
-           selectionBox.gameObject.SetActive(true);
-           UpdateSelectionBoxPosition(selectionStart, selectionStart);
-       }
+        if (selectionBox != null)
+        {
+            selectionBox.gameObject.SetActive(true);
+            UpdateSelectionBoxPosition(selectionStart, selectionStart);
+        }
       
-       // Only clear selection if not holding shift for multi-select
-       if (!Input.GetKey(KeyCode.LeftShift))
-       {
-           ClearSelection();
-       }
+        // Only clear selection if not holding shift for multi-select
+        if (!Input.GetKey(KeyCode.LeftShift))
+        {
+            ClearSelection();
+        }
       
-       if (debugMode) Debug.Log("Selection started");
-   }
+        if (debugMode) Debug.Log("Selection started");
+    }
 
+    void UpdateSelectionBox()
+    {
+        if (selectionBox == null) return;
+        UpdateSelectionBoxPosition(selectionStart, Input.mousePosition);
+    }
 
-   void UpdateSelectionBox()
-   {
-       if (selectionBox == null) return;
-       UpdateSelectionBoxPosition(selectionStart, Input.mousePosition);
-   }
-
-
-   void UpdateSelectionBoxPosition(Vector2 startPos, Vector2 currentPos)
-   {
-       float width = currentPos.x - startPos.x;
-       float height = currentPos.y - startPos.y;
+    void UpdateSelectionBoxPosition(Vector2 startPos, Vector2 currentPos)
+    {
+        float width = currentPos.x - startPos.x;
+        float height = currentPos.y - startPos.y;
       
-       Vector2 boxPosition = new Vector2(
-           Mathf.Min(startPos.x, currentPos.x),
-           Mathf.Min(startPos.y, currentPos.y)
-       );
+        Vector2 boxPosition = new Vector2(
+            Mathf.Min(startPos.x, currentPos.x),
+            Mathf.Min(startPos.y, currentPos.y)
+        );
       
-       Vector2 boxSize = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+        Vector2 boxSize = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
       
-       selectionBox.anchoredPosition = boxPosition;
-       selectionBox.sizeDelta = boxSize;
-   }
+        selectionBox.anchoredPosition = boxPosition;
+        selectionBox.sizeDelta = boxSize;
+    }
 
-
-   void EndSelection()
-   {
-       isSelecting = false;
+    void EndSelection()
+    {
+        isSelecting = false;
       
-       if (selectionBox != null)
-       {
-           selectionBox.gameObject.SetActive(false);
-       }
+        if (selectionBox != null)
+        {
+            selectionBox.gameObject.SetActive(false);
+        }
       
-       Vector2 selectionEnd = Input.mousePosition;
+        Vector2 selectionEnd = Input.mousePosition;
       
-       if (Vector2.Distance(selectionStart, selectionEnd) < clickDragThreshold)
-       {
-           HandleSingleClickSelection();
-       }
-       else
-       {
-           HandleBoxSelection(selectionStart, selectionEnd);
-       }
+        if (Vector2.Distance(selectionStart, selectionEnd) < clickDragThreshold)
+        {
+            HandleSingleClickSelection();
+        }
+        else
+        {
+            HandleBoxSelection(selectionStart, selectionEnd);
+        }
       
-       if (debugMode) Debug.Log($"Selection ended. {selectedMinions.Count} minions selected");
-   }
+        if (debugMode) Debug.Log($"Selection ended. {selectedMinions.Count} minions selected");
+    }
 
-
-   void HandleSingleClickSelection()
-   {
-       Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-       RaycastHit hit;
-      
-       if (Physics.Raycast(ray, out hit, Mathf.Infinity, selectableLayer))
-       {
-           Minion minion = hit.collider.GetComponent<Minion>();
-           if (minion != null)
-           {
-               // Team check - only select friendly units
-               Team minionTeam = minion.GetComponent<Team>();
-               if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
-               {
-                   if (debugMode) Debug.Log($"Cannot select enemy unit: {minion.gameObject.name}");
-                   return;
-               }
-
-               // If shift is held, add to selection instead of replacing
-               if (!Input.GetKey(KeyCode.LeftShift))
-               {
-                   ClearSelection();
-               }
-               SelectMinion(minion);
-              
-               if (debugMode) Debug.Log($"Single click selected: {minion.gameObject.name}");
-           }
-       }
-       else
-       {
-           // Clicked on empty space - clear selection unless shift is held
-           if (!Input.GetKey(KeyCode.LeftShift))
-           {
-               ClearSelection();
-           }
-       }
-   }
-
-
-   void HandleBoxSelection(Vector2 startScreen, Vector2 endScreen)
-   {
-       Rect selectionRect = GetScreenRect(startScreen, endScreen);
-       Minion[] allMinions = FindObjectsOfType<Minion>();
-      
-       int selectedCount = 0;
-       foreach (Minion minion in allMinions)
-       {
-           // Team check - only select friendly units
-           Team minionTeam = minion.GetComponent<Team>();
-           if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
-           {
-               continue; // Skip enemy units
-           }
-
-           Vector2 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
-           if (selectionRect.Contains(screenPos))
-           {
-               SelectMinion(minion);
-               selectedCount++;
-           }
-       }
-      
-       if (debugMode) Debug.Log($"Box selection: {selectedCount} minions selected");
-   }
-
-
-   Rect GetScreenRect(Vector2 screenPosition1, Vector2 screenPosition2)
-   {
-       screenPosition1.y = Screen.height - screenPosition1.y;
-       screenPosition2.y = Screen.height - screenPosition2.y;
-      
-       Vector2 topLeft = Vector2.Min(screenPosition1, screenPosition2);
-       Vector2 bottomRight = Vector2.Max(screenPosition1, screenPosition2);
-      
-       return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-   }
-
-
-// Update the HandleCommands method in both RTSSystem and UIRTSSystem
-void HandleCommands()
-{
-    if (Input.GetMouseButtonDown(1) && selectedMinions.Count > 0)
+    void HandleSingleClickSelection()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer | selectableLayer))
+      
+        if (Physics.Raycast(ray, out hit, Mathf.Infinity, selectableLayer))
         {
-            // Check if we clicked on an enemy (minion or building)
-            Health enemyHealth = hit.collider.GetComponent<Health>();
-            Team enemyTeam = hit.collider.GetComponent<Team>();
-            
-            if (enemyHealth != null && enemyTeam != null && enemyTeam.GetTeam() != playerTeam && enemyHealth.IsAlive())
+            Minion minion = hit.collider.GetComponent<Minion>();
+            if (minion != null)
             {
-                // ATTACK COMMAND
-                Debug.Log($"[RTS] Attack command issued to {selectedMinions.Count} units against {hit.collider.gameObject.name}");
-                
-                foreach (Minion minion in selectedMinions)
+                // Team check - only select friendly units
+                Team minionTeam = minion.GetComponent<Team>();
+                if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
                 {
-                    if (minion != null)
-                    {
-                        UnitCombat combat = minion.GetComponent<UnitCombat>();
-                        if (combat != null)
-                        {
-                            combat.SetTarget(enemyHealth);
-                            Debug.Log($"[RTS] {minion.gameObject.name} targeting {enemyHealth.gameObject.name}");
-                        }
-                        
-                        MinionMovement movement = minion.GetComponent<MinionMovement>();
-                        if (movement != null)
-                        {
-                            movement.ShowAttackMarker(enemyHealth.transform.position);
-                        }
-                    }
+                    if (debugMode) Debug.Log($"Cannot select enemy unit: {minion.gameObject.name}");
+                    return;
                 }
-            }
-            else
-            {
-                // MOVE COMMAND
-                if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 1.0f, NavMesh.AllAreas))
+
+                // If shift is held, add to selection instead of replacing
+                if (!Input.GetKey(KeyCode.LeftShift))
                 {
-                    Debug.Log($"[RTS] Move command issued to {selectedMinions.Count} units to {navHit.position}");
-                    
+                    ClearSelection();
+                }
+                SelectMinion(minion);
+              
+                if (debugMode) Debug.Log($"Single click selected: {minion.gameObject.name}");
+            }
+        }
+        else
+        {
+            // Clicked on empty space - clear selection unless shift is held
+            if (!Input.GetKey(KeyCode.LeftShift))
+            {
+                ClearSelection();
+            }
+        }
+    }
+
+    void HandleBoxSelection(Vector2 startScreen, Vector2 endScreen)
+    {
+        Rect selectionRect = GetScreenRect(startScreen, endScreen);
+        Minion[] allMinions = FindObjectsOfType<Minion>();
+      
+        int selectedCount = 0;
+        foreach (Minion minion in allMinions)
+        {
+            // Team check - only select friendly units
+            Team minionTeam = minion.GetComponent<Team>();
+            if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
+            {
+                continue; // Skip enemy units
+            }
+
+            Vector2 screenPos = mainCamera.WorldToScreenPoint(minion.transform.position);
+            if (selectionRect.Contains(screenPos))
+            {
+                SelectMinion(minion);
+                selectedCount++;
+            }
+        }
+      
+        if (debugMode) Debug.Log($"Box selection: {selectedCount} minions selected");
+    }
+
+    Rect GetScreenRect(Vector2 screenPosition1, Vector2 screenPosition2)
+    {
+        screenPosition1.y = Screen.height - screenPosition1.y;
+        screenPosition2.y = Screen.height - screenPosition2.y;
+      
+        Vector2 topLeft = Vector2.Min(screenPosition1, screenPosition2);
+        Vector2 bottomRight = Vector2.Max(screenPosition1, screenPosition2);
+      
+        return Rect.MinMaxRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+    }
+
+    void HandleCommands()
+    {
+        if (Input.GetMouseButtonDown(1) && selectedMinions.Count > 0)
+        {
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer | selectableLayer))
+            {
+                Health enemyHealth = hit.collider.GetComponent<Health>();
+                Team enemyTeam = hit.collider.GetComponent<Team>();
+
+                if (enemyHealth != null && enemyTeam != null && enemyTeam.GetTeam() != playerTeam && enemyHealth.IsAlive())
+                {
                     foreach (Minion minion in selectedMinions)
                     {
                         if (minion != null)
@@ -317,13 +272,31 @@ void HandleCommands()
                             UnitCombat combat = minion.GetComponent<UnitCombat>();
                             if (combat != null)
                             {
-                                combat.ClearTarget();
+                                combat.ForceAttackTarget(enemyHealth);
                             }
-                            
+
                             MinionMovement movement = minion.GetComponent<MinionMovement>();
                             if (movement != null)
                             {
-                                movement.MoveTo(navHit.position);
+                                movement.ShowAttackMarker(enemyHealth.transform.position);
+                            }
+                        }
+                    }
+                    return;
+                }
+                else
+                {
+                    if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 1.0f, NavMesh.AllAreas))
+                    {
+                        foreach (Minion minion in selectedMinions)
+                        {
+                            if (minion != null)
+                            {
+                                MinionMovement movement = minion.GetComponent<MinionMovement>();
+                                if (movement != null)
+                                {
+                                    movement.MoveTo(navHit.position);
+                                }
                             }
                         }
                     }
@@ -331,188 +304,182 @@ void HandleCommands()
             }
         }
     }
-}
 
-
-void SelectMinion(Minion minion)
-{
-    if (selectedMinions.Contains(minion))
+    void SelectMinion(Minion minion)
     {
-        if (debugMode) Debug.Log($"[SELECTION] {minion.gameObject.name} already selected");
-        return;
-    }
-    
-    // Team check
-    Team minionTeam = minion.GetComponent<Team>();
-    if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
-    {
-        if (debugMode) Debug.Log($"[SELECTION] Cannot select enemy unit: {minion.gameObject.name}");
-        return;
-    }
-
-    selectedMinions.Add(minion);
-    
-    // Apply selection material to non-health bar renderers
-    Renderer[] allRenderers = minion.GetComponentsInChildren<Renderer>();
-    List<Material[]> originalMatsList = new List<Material[]>();
-    
-    foreach (Renderer renderer in allRenderers)
-    {
-        // Skip health bar and its children
-        if (renderer.transform.parent != null && 
-            (renderer.transform.parent.name.Contains("HealthBar") || 
-             renderer.gameObject.name.Contains("HealthBar")))
+        if (selectedMinions.Contains(minion))
         {
-            continue;
+            if (debugMode) Debug.Log($"Minion {minion.gameObject.name} already selected");
+            return;
         }
         
-        Material[] originalMats = new Material[renderer.materials.Length];
-        for (int i = 0; i < renderer.materials.Length; i++)
+        // Team check - only select friendly units
+        Team minionTeam = minion.GetComponent<Team>();
+        if (minionTeam != null && minionTeam.GetTeam() != playerTeam)
         {
-            originalMats[i] = renderer.materials[i];
+            if (debugMode) Debug.Log($"Cannot select enemy unit: {minion.gameObject.name}");
+            return;
         }
-        originalMatsList.Add(originalMats);
+
+        selectedMinions.Add(minion);
         
-        // Apply selection material
-        if (selectedMaterial != null)
+        // Get all renderers and store original materials
+        Renderer[] allRenderers = minion.GetComponentsInChildren<Renderer>();
+        List<Renderer> validRenderers = new List<Renderer>();
+        List<Material[]> originalMatsList = new List<Material[]>();
+        
+        foreach (Renderer renderer in allRenderers)
         {
-            Material[] selectionMats = new Material[renderer.materials.Length];
-            for (int i = 0; i < selectionMats.Length; i++)
+            // Skip health bar and its children
+            if (renderer.transform.parent != null && 
+                (renderer.transform.parent.name.Contains("HealthBar") || 
+                 renderer.gameObject.name.Contains("HealthBar")))
             {
-                selectionMats[i] = selectedMaterial;
+                continue;
             }
-            renderer.materials = selectionMats;
+            
+            validRenderers.Add(renderer);
+            
+            // Store original materials
+            Material[] originalMats = new Material[renderer.materials.Length];
+            for (int i = 0; i < renderer.materials.Length; i++)
+            {
+                originalMats[i] = renderer.materials[i];
+            }
+            originalMatsList.Add(originalMats);
+            
+            // Apply selection material
+            if (selectedMaterial != null)
+            {
+                Material[] selectionMats = new Material[renderer.materials.Length];
+                for (int i = 0; i < selectionMats.Length; i++)
+                {
+                    selectionMats[i] = selectedMaterial;
+                }
+                renderer.materials = selectionMats;
+            }
         }
+        
+        // Store for deselection
+        originalRenderers.Add(validRenderers.ToArray());
+        originalMaterials.Add(originalMatsList.ToArray());
+        
+        minion.OnSelected();
+        
+        if (debugMode) Debug.Log($"Selected minion: {minion.gameObject.name}");
     }
-    
-    // FIX: Convert to array and add to the list of Material[][]
-    originalMaterials.Add(originalMatsList.ToArray());
-    minion.OnSelected();
-    
-    if (debugMode) Debug.Log($"[SELECTION] Selected {minion.gameObject.name}");
-}
 
-// Update the ClearSelection method:
-void ClearSelection()
-{
-    if (debugMode) Debug.Log($"[SELECTION] Clearing selection of {selectedMinions.Count} minions");
-    
-    for (int i = 0; i < selectedMinions.Count; i++)
+    void ClearSelection()
     {
-        if (selectedMinions[i] != null)
+        if (debugMode) Debug.Log($"Clearing selection of {selectedMinions.Count} minions");
+        
+        // Restore original materials for all selected minions
+        for (int i = 0; i < selectedMinions.Count; i++)
         {
-            Renderer[] renderers = selectedMinions[i].GetComponentsInChildren<Renderer>();
-            int materialIndex = 0;
-            
-            foreach (Renderer renderer in renderers)
+            if (selectedMinions[i] != null)
             {
-                // Skip health bar renderers
-                if (renderer.transform.parent != null && 
-                    (renderer.transform.parent.name.Contains("HealthBar") || 
-                     renderer.gameObject.name.Contains("HealthBar")))
+                if (i < originalRenderers.Count && i < originalMaterials.Count)
                 {
-                    continue;
+                    Renderer[] renderers = originalRenderers[i];
+                    Material[][] materials = originalMaterials[i];
+                    
+                    for (int j = 0; j < renderers.Length && j < materials.Length; j++)
+                    {
+                        if (renderers[j] != null && materials[j] != null)
+                        {
+                            renderers[j].materials = materials[j];
+                        }
+                    }
                 }
-                
-                if (i < originalMaterials.Count && materialIndex < originalMaterials[i].Length)
+                selectedMinions[i].OnDeselected();
+            }
+        }
+        
+        selectedMinions.Clear();
+        originalRenderers.Clear();
+        originalMaterials.Clear();
+    }
+
+    void MoveGroupTo(Vector3 destination)
+    {
+        int count = selectedMinions.Count;
+        if (count == 0) return;
+      
+        // Simple formation calculation - only for SELECTED minions
+        int rows = Mathf.CeilToInt(Mathf.Sqrt(count));
+        float spacing = 2f;
+      
+        for (int i = 0; i < count; i++)
+        {
+            if (selectedMinions[i] == null) continue;
+          
+            int row = i / rows;
+            int col = i % rows;
+          
+            Vector3 offset = new Vector3(
+                (col - (rows - 1) * 0.5f) * spacing,
+                0,
+                (row - (rows - 1) * 0.5f) * spacing
+            );
+          
+            Vector3 targetPos = destination + offset;
+          
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                MinionMovement movement = selectedMinions[i].GetComponent<MinionMovement>();
+                if (movement != null)
                 {
-                    renderer.materials = originalMaterials[i][materialIndex];
-                    materialIndex++;
+                    movement.MoveTo(hit.position);
                 }
             }
-            
-            selectedMinions[i].OnDeselected();
+        }
+      
+        if (debugMode) Debug.Log($"Moved group of {count} minions to formation");
+    }
+
+    // Debug methods
+    [ContextMenu("Log Selected Minions")]
+    void LogSelectedMinions()
+    {
+        Debug.Log($"=== SELECTED MINIONS: {selectedMinions.Count} ===");
+        for (int i = 0; i < selectedMinions.Count; i++)
+        {
+            if (selectedMinions[i] != null)
+            {
+                Team team = selectedMinions[i].GetComponent<Team>();
+                string teamInfo = team != null ? $"Team: {team.GetTeam()}" : "No Team";
+                Debug.Log($"{i}: {selectedMinions[i].gameObject.name} - {teamInfo}");
+            }
+            else
+            {
+                Debug.Log($"{i}: NULL (missing minion)");
+            }
         }
     }
-    
-    selectedMinions.Clear();
-    originalMaterials.Clear();
-}
 
+    [ContextMenu("Clear Selection")]
+    void ClearSelectionContext()
+    {
+        ClearSelection();
+    }
 
-   void MoveGroupTo(Vector3 destination)
-   {
-       int count = selectedMinions.Count;
-       if (count == 0) return;
-      
-       // Simple formation calculation - only for SELECTED minions
-       int rows = Mathf.CeilToInt(Mathf.Sqrt(count));
-       float spacing = 2f;
-      
-       for (int i = 0; i < count; i++)
-       {
-           if (selectedMinions[i] == null) continue;
-          
-           int row = i / rows;
-           int col = i % rows;
-          
-           Vector3 offset = new Vector3(
-               (col - (rows - 1) * 0.5f) * spacing,
-               0,
-               (row - (rows - 1) * 0.5f) * spacing
-           );
-          
-           Vector3 targetPos = destination + offset;
-          
-           if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-           {
-               MinionMovement movement = selectedMinions[i].GetComponent<MinionMovement>();
-               if (movement != null)
-               {
-                   movement.MoveTo(hit.position);
-               }
-           }
-       }
-      
-       if (debugMode) Debug.Log($"Moved group of {count} minions to formation");
-   }
-
-
-   // Debug methods
-   [ContextMenu("Log Selected Minions")]
-   void LogSelectedMinions()
-   {
-       Debug.Log($"=== SELECTED MINIONS: {selectedMinions.Count} ===");
-       for (int i = 0; i < selectedMinions.Count; i++)
-       {
-           if (selectedMinions[i] != null)
-           {
-               Team team = selectedMinions[i].GetComponent<Team>();
-               string teamInfo = team != null ? $"Team: {team.GetTeam()}" : "No Team";
-               Debug.Log($"{i}: {selectedMinions[i].gameObject.name} - {teamInfo}");
-           }
-           else
-           {
-               Debug.Log($"{i}: NULL (missing minion)");
-           }
-       }
-   }
-
-
-   [ContextMenu("Clear Selection")]
-   void ClearSelectionContext()
-   {
-       ClearSelection();
-   }
-
-
-   [ContextMenu("Select All Minions")]
-   void SelectAllMinions()
-   {
-       ClearSelection();
-       Minion[] allMinions = FindObjectsOfType<Minion>();
-       int selectedCount = 0;
-       
-       foreach (Minion minion in allMinions)
-       {
-           // Only select friendly minions
-           Team minionTeam = minion.GetComponent<Team>();
-           if (minionTeam != null && minionTeam.GetTeam() == playerTeam)
-           {
-               SelectMinion(minion);
-               selectedCount++;
-           }
-       }
-       Debug.Log($"Selected {selectedCount} friendly minions out of {allMinions.Length} total");
-   }
+    [ContextMenu("Select All Minions")]
+    void SelectAllMinions()
+    {
+        ClearSelection();
+        Minion[] allMinions = FindObjectsOfType<Minion>();
+        int selectedCount = 0;
+        
+        foreach (Minion minion in allMinions)
+        {
+            // Only select friendly minions
+            Team minionTeam = minion.GetComponent<Team>();
+            if (minionTeam != null && minionTeam.GetTeam() == playerTeam)
+            {
+                SelectMinion(minion);
+                selectedCount++;
+            }
+        }
+        Debug.Log($"Selected {selectedCount} friendly minions out of {allMinions.Length} total");
+    }
 }

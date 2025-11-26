@@ -165,21 +165,36 @@ public class RecruitmentBuilding : MonoBehaviour
            Debug.LogError("No minion prefab assigned to recruitment building!");
            return;
        }
-      
+    
        // Find spawn position based on selected method
        Vector3 spawnPosition = GetSpawnPosition();
-      
+    
        // Instantiate minion
        GameObject newMinion = Instantiate(minionPrefab, spawnPosition, Quaternion.identity);
-      
+    
+       // Set the minion's team to match the building's team
+       Team buildingTeam = GetComponent<Team>();
+       Team minionTeam = newMinion.GetComponent<Team>();
+    
+       if (buildingTeam != null && minionTeam != null)
+       {
+           minionTeam.SetTeam(buildingTeam.GetTeam());
+           minionTeam.SetTeamColor(buildingTeam.GetTeamColor());
+           Debug.Log($"Spawned minion for team: {buildingTeam.GetTeam()}");
+       }
+       else
+       {
+           Debug.LogWarning("Could not set team for spawned minion - missing Team components");
+       }
+    
        // Initialize minion
        Minion minionComponent = newMinion.GetComponent<Minion>();
        if (minionComponent != null)
        {
            minionComponent.OnSpawned();
        }
-      
-       Debug.Log($"Minion spawned at {spawnPosition} using {spawnMethod} method");
+    
+       Debug.Log($"Minion spawned at {spawnPosition} using {spawnMethod} method for team {buildingTeam.GetTeam()}");
    }
 
    Vector3 GetSpawnPosition()

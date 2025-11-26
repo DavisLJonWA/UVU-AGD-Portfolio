@@ -207,4 +207,20 @@ public class RecruitmentUI : MonoBehaviour
            currentBuilding.onRecruitmentProgress.RemoveListener(OnRecruitmentProgress);
        }
    }
+   
+
+   
+   [ContextMenu("Test Show UI")]
+   public void TestShowUI()
+   {
+       RecruitmentBuilding testBuilding = FindObjectOfType<RecruitmentBuilding>();
+       if (testBuilding != null)
+       {
+           ShowUI(testBuilding);
+       }
+       else
+       {
+           Debug.LogError("No RecruitmentBuilding found in scene!");
+       }
+   }
 }

@@ -1,69 +1,131 @@
 using UnityEngine;
-using UnityEngine.EventSystems; // Add this namespace
+using UnityEngine.EventSystems;
 
 public class BuildingSelectionHandler : MonoBehaviour
 {
-   [Header("Selection Settings")]
-   [SerializeField] private LayerMask buildingLayer = 1 << 8;
-   [SerializeField] private GameAction onBuildingSelected;
-   [SerializeField] private GameAction onBuildingDeselected;
-  
-   private Camera mainCamera;
-   private RecruitmentBuilding selectedBuilding;
+    [Header("Selection Settings")]
+    [SerializeField] private LayerMask buildingLayer = 1 << 8;
+    [SerializeField] private TeamAffiliation playerTeam = TeamAffiliation.Team1;
 
-   void Start()
-   {
-       mainCamera = Camera.main;
-   }
+    [Header("UI Reference")]
+    [SerializeField] private RecruitmentUI recruitmentUI;
 
-   void Update()
-   {
-       HandleBuildingSelection();
-   }
+    private Camera mainCamera;
+    private RecruitmentBuilding selectedBuilding;
 
-   void HandleBuildingSelection()
-   {
-       if (Input.GetMouseButtonDown(0))
-       {
-           // Check if we're clicking on UI - if so, don't process building selection
-           if (EventSystem.current.IsPointerOverGameObject())
-           {
-               return;
-           }
+    void Start()
+    {
+        mainCamera = Camera.main;
+        
+        // Ensure we have a UI reference
+        if (recruitmentUI == null)
+        {
+            recruitmentUI = FindObjectOfType<RecruitmentUI>(true); // Include inactive objects
+            if (recruitmentUI == null)
+            {
+                Debug.LogError("BuildingSelectionManager: No RecruitmentUI found in scene!");
+                // Create a simple UI if none exists
+                CreateFallbackUI();
+            }
+        }
 
-           Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-           RaycastHit hit;
-          
-           if (Physics.Raycast(ray, out hit, Mathf.Infinity, buildingLayer))
-           {
-               RecruitmentBuilding building = hit.collider.GetComponent<RecruitmentBuilding>();
-               if (building != null)
-               {
-                   // Deselect previous building
-                   if (selectedBuilding != null && selectedBuilding != building)
-                   {
-                       onBuildingDeselected?.RaiseNoArgs();
-                   }
-                  
-                   // Select new building
-                   selectedBuilding = building;
-                   onBuildingSelected?.RaiseNoArgs();
-                  
-                   Debug.Log($"Building selected: {building.gameObject.name}");
-               }
-           }
-           else
-           {
-               // Clicked on empty space - deselect building
-               if (selectedBuilding != null)
-               {
-                   selectedBuilding = null;
-                   onBuildingDeselected?.RaiseNoArgs();
-                   Debug.Log("Building deselected");
-               }
-           }
-       }
-   }
+        Debug.Log("Building Selection Manager initialized");
+    }
 
-   // ... rest of your code
+    void Update()
+    {
+        HandleBuildingSelection();
+    }
+
+    void HandleBuildingSelection()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Skip if clicking on UI
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                Debug.Log("Clicked on UI, ignoring building selection");
+                return;
+            }
+
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, buildingLayer))
+            {
+                RecruitmentBuilding building = hit.collider.GetComponentInParent<RecruitmentBuilding>();
+                if (building != null)
+                {
+                    // Team check
+                    Team buildingTeam = building.GetComponent<Team>();
+                    if (buildingTeam != null && buildingTeam.GetTeam() == playerTeam)
+                    {
+                        SelectBuilding(building);
+                        return;
+                    }
+                }
+            }
+
+            // Clicked on empty space - deselect
+            DeselectBuilding();
+        }
+    }
+
+    void SelectBuilding(RecruitmentBuilding building)
+    {
+        // Deselect previous building
+        if (selectedBuilding != null && selectedBuilding != building)
+        {
+            DeselectBuilding();
+        }
+
+        selectedBuilding = building;
+        
+        // Show UI
+        if (recruitmentUI != null)
+        {
+            recruitmentUI.ShowUI(building);
+            Debug.Log($"Building UI shown for: {building.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogError("RecruitmentUI is null!");
+        }
+
+        Debug.Log($"Building selected: {building.gameObject.name}");
+    }
+
+    void DeselectBuilding()
+    {
+        if (selectedBuilding != null)
+        {
+            if (recruitmentUI != null)
+            {
+                recruitmentUI.HideUI();
+            }
+            selectedBuilding = null;
+            Debug.Log("Building deselected");
+        }
+    }
+
+    void CreateFallbackUI()
+    {
+        Debug.LogWarning("Creating fallback recruitment UI");
+        // You can create a simple UI programmatically here if needed
+    }
+
+    [ContextMenu("Test Building Selection")]
+    void TestSelectBuilding()
+    {
+        RecruitmentBuilding[] buildings = FindObjectsOfType<RecruitmentBuilding>();
+        foreach (RecruitmentBuilding building in buildings)
+        {
+            Team team = building.GetComponent<Team>();
+            if (team != null && team.GetTeam() == playerTeam)
+            {
+                SelectBuilding(building);
+                break;
+            }
+        }
+    }
 }

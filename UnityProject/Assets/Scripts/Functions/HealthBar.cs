@@ -1,4 +1,3 @@
-// EnhancedHealthBar.cs - Replace HealthBar with this
 using UnityEngine;
 using TMPro;
 
@@ -8,42 +7,48 @@ public class HealthBar : MonoBehaviour
     [SerializeField] private float heightAboveObject = 2.5f;
     [SerializeField] private Vector2 barSize = new Vector2(1.5f, 0.2f);
     [SerializeField] private bool showNumbers = true;
-    [SerializeField] private float numberSize = 0.15f;
+
+    [Header("Colors")]
+    [SerializeField] private Color backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+    [SerializeField] private Color fullHealthColor = Color.green;
+    [SerializeField] private Color lowHealthColor = Color.red;
     [SerializeField] private bool useTeamColor = true;
-    [SerializeField] private float zOffset = -0.5f; // Prevent z-fighting with selection
-    
-    [Header("Visual Settings")]
-    [SerializeField] private Material backgroundMaterial;
-    [SerializeField] private Material healthMaterial;
-    [SerializeField] private Color defaultTeamColor = Color.green;
-    
+
     // Components
-    private Transform healthBarParent;
-    private Transform healthFill;
+    private GameObject healthBarParent;
+    private GameObject healthBackground;
+    private GameObject healthFill;
     private TextMeshPro healthText;
-    private MeshRenderer backgroundRenderer;
-    private MeshRenderer healthRenderer;
-    
+
     private Health healthComponent;
     private Team teamComponent;
     private Camera mainCamera;
     private float initialHealthFillScale;
-    private Color teamColor;
 
     void Start()
     {
-        healthComponent = GetComponentInParent<Health>();
-        teamComponent = GetComponentInParent<Team>();
-        mainCamera = Camera.main;
-
-        if (healthComponent == null)
+        // Check if health bar already exists
+        if (transform.Find("HealthBar") != null)
         {
-            Debug.LogError("EnhancedHealthBar: No Health component found in parent!");
+            Debug.LogWarning($"HealthBar already exists on {gameObject.name}, destroying duplicate.");
+            Destroy(this);
             return;
         }
 
-        UpdateTeamColor();
-        InitializeHealthBar();
+        // Find components
+        healthComponent = GetComponent<Health>();
+        if (healthComponent == null) healthComponent = GetComponentInParent<Health>();
+        if (healthComponent == null)
+        {
+            Debug.LogError($"RobustHealthBar: No Health component found on {gameObject.name}");
+            enabled = false;
+            return;
+        }
+        teamComponent = GetComponent<Team>();
+        if (teamComponent == null) teamComponent = GetComponentInParent<Team>();
+        mainCamera = Camera.main;
+
+        CreateHealthBar();
         
         // Subscribe to events
         healthComponent.onHealthChanged.AddListener(UpdateHealthBar);
@@ -52,92 +57,86 @@ public class HealthBar : MonoBehaviour
         UpdateHealthBar(healthComponent.GetHealth());
     }
 
-    void InitializeHealthBar()
+    void CreateHealthBar()
     {
-        // Create health bar parent
-        healthBarParent = new GameObject("HealthBar").transform;
-        healthBarParent.SetParent(transform);
-        healthBarParent.localPosition = Vector3.zero;
+        // Create parent object
+        healthBarParent = new GameObject("HealthBar");
+        healthBarParent.transform.SetParent(transform);
+        healthBarParent.transform.localPosition = Vector3.zero;
 
         // Create background
-        GameObject backgroundObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        backgroundObj.name = "HealthBarBackground";
-        backgroundObj.transform.SetParent(healthBarParent);
-        backgroundObj.transform.localPosition = new Vector3(0, 0, zOffset);
-        backgroundObj.transform.localRotation = Quaternion.identity;
-        backgroundObj.transform.localScale = new Vector3(barSize.x, barSize.y, 1f);
-        
-        backgroundRenderer = backgroundObj.GetComponent<MeshRenderer>();
-        if (backgroundMaterial != null)
-        {
-            backgroundRenderer.material = backgroundMaterial;
-        }
-        else
-        {
-            Material bgMat = new Material(Shader.Find("Standard"));
-            bgMat.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-            backgroundRenderer.material = bgMat;
-        }
-        Destroy(backgroundObj.GetComponent<Collider>());
+        healthBackground = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        healthBackground.name = "HealthBackground";
+        healthBackground.transform.SetParent(healthBarParent.transform);
+        healthBackground.transform.localPosition = Vector3.zero;
+        healthBackground.transform.localRotation = Quaternion.identity;
+        healthBackground.transform.localScale = new Vector3(barSize.x, barSize.y, 1f);
+
+        Renderer bgRenderer = healthBackground.GetComponent<Renderer>();
+        bgRenderer.material = CreateSimpleMaterial(backgroundColor);
+        Destroy(healthBackground.GetComponent<Collider>());
 
         // Create health fill
-        GameObject fillObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        fillObj.name = "HealthBarFill";
-        fillObj.transform.SetParent(healthBarParent);
-        fillObj.transform.localPosition = new Vector3(0, 0, zOffset - 0.01f); // In front of background
-        fillObj.transform.localRotation = Quaternion.identity;
-        fillObj.transform.localScale = new Vector3(barSize.x, barSize.y, 1f);
-        
-        healthFill = fillObj.transform;
-        healthRenderer = fillObj.GetComponent<MeshRenderer>();
-        
-        if (healthMaterial != null)
-        {
-            healthRenderer.material = healthMaterial;
-        }
-        
-        UpdateHealthColor();
-        Destroy(fillObj.GetComponent<Collider>());
+        healthFill = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        healthFill.name = "HealthFill";
+        healthFill.transform.SetParent(healthBarParent.transform);
+        healthFill.transform.localPosition = new Vector3(0, 0, -0.01f);
+        healthFill.transform.localRotation = Quaternion.identity;
+        healthFill.transform.localScale = new Vector3(barSize.x, barSize.y, 1f);
+
+        Renderer fillRenderer = healthFill.GetComponent<Renderer>();
+        fillRenderer.material = CreateSimpleMaterial(fullHealthColor);
+        Destroy(healthFill.GetComponent<Collider>());
+        initialHealthFillScale = barSize.x;
 
         // Create text
         if (showNumbers)
         {
             CreateHealthText();
         }
+    }
 
-        initialHealthFillScale = barSize.x;
+    Material CreateSimpleMaterial(Color color)
+    {
+        // Use a simple unlit shader that always works
+        Shader shader = Shader.Find("Unlit/Color");
+        if (shader == null)
+        {
+            // Fallback to standard shader
+            shader = Shader.Find("Standard");
+        }
+
+        Material mat = new Material(shader);
+        mat.color = color;
+        return mat;
     }
 
     void CreateHealthText()
     {
         GameObject textObj = new GameObject("HealthText");
-        textObj.transform.SetParent(healthBarParent);
-        textObj.transform.localPosition = new Vector3(0, 0, zOffset - 0.02f); // In front of everything
+        textObj.transform.SetParent(healthBarParent.transform);
+        textObj.transform.localPosition = new Vector3(0, 0, -0.02f);
         textObj.transform.localRotation = Quaternion.identity;
-        textObj.transform.localScale = Vector3.one * numberSize;
+        textObj.transform.localScale = Vector3.one * 0.15f;
 
         healthText = textObj.AddComponent<TextMeshPro>();
         healthText.alignment = TextAlignmentOptions.Center;
         healthText.fontSize = 4;
         healthText.color = Color.white;
         healthText.text = "100/100";
-        
-        // Enhanced visibility
-        healthText.outlineWidth = 0.4f;
+
+        healthText.outlineWidth = 0.3f;
         healthText.outlineColor = Color.black;
         healthText.fontStyle = FontStyles.Bold;
-        
-        // Ensure text renders on top
-        healthText.sortingOrder = 100;
     }
 
-    void Update()
+    void LateUpdate()
     {
-        // Billboard effect - always face camera
+        // Always face the camera using billboarding
         if (mainCamera != null && healthBarParent != null)
         {
-            healthBarParent.rotation = mainCamera.transform.rotation;
-            healthBarParent.position = transform.position + Vector3.up * heightAboveObject;
+            healthBarParent.transform.rotation = mainCamera.transform.rotation;
+            healthBarParent.transform.position = transform.position + Vector3.up * heightAboveObject;
         }
     }
 
@@ -146,11 +145,11 @@ public class HealthBar : MonoBehaviour
         if (healthFill == null) return;
 
         float healthPercentage = currentHealth / healthComponent.GetMaxHealth();
-        
+
         // Update fill scale
-        Vector3 newScale = healthFill.localScale;
+        Vector3 newScale = healthFill.transform.localScale;
         newScale.x = initialHealthFillScale * healthPercentage;
-        healthFill.localScale = newScale;
+        healthFill.transform.localScale = newScale;
 
         // Update text
         if (healthText != null)
@@ -162,55 +161,35 @@ public class HealthBar : MonoBehaviour
         UpdateHealthColor(healthPercentage);
     }
 
-    void UpdateTeamColor()
+    void UpdateHealthColor(float healthPercentage)
     {
-        if (teamComponent != null)
-        {
-            teamColor = teamComponent.GetTeamColor();
-            Debug.Log($"[HEALTHBAR] {gameObject.name} using team color: {teamColor}");
-        }
-        else
-        {
-            teamColor = defaultTeamColor;
-            Debug.Log($"[HEALTHBAR] {gameObject.name} using default color");
-        }
-    }
+        if (healthFill == null) return;
 
-    void UpdateHealthColor(float healthPercentage = 1f)
-    {
-        if (healthRenderer == null) return;
+        Renderer fillRenderer = healthFill.GetComponent<Renderer>();
+        if (fillRenderer == null) return;
 
-        if (useTeamColor)
+        Color targetColor = fullHealthColor;
+
+        if (useTeamColor && teamComponent != null)
         {
-            // Use team color with health-based brightness
-            Color finalColor = teamColor;
-            if (healthPercentage < 0.3f)
-            {
-                finalColor = Color.Lerp(teamColor * 0.5f, teamColor, healthPercentage * 3f);
-            }
-            healthRenderer.material.color = finalColor;
+            targetColor = teamComponent.GetTeamColor();
         }
-        else
+
+        // Blend towards red at low health
+        if (healthPercentage < 0.5f)
         {
-            // Health-based color transition
-            if (healthPercentage > 0.5f)
-            {
-                float t = (healthPercentage - 0.5f) * 2f;
-                healthRenderer.material.color = Color.Lerp(Color.yellow, Color.green, t);
-            }
-            else
-            {
-                float t = healthPercentage * 2f;
-                healthRenderer.material.color = Color.Lerp(Color.red, Color.yellow, t);
-            }
+            float t = healthPercentage * 2f; // 0 to 1 as health goes from 0% to 50%
+            targetColor = Color.Lerp(lowHealthColor, targetColor, t);
         }
+
+        fillRenderer.material.color = targetColor;
     }
 
     void OnDeath()
     {
         if (healthBarParent != null)
         {
-            healthBarParent.gameObject.SetActive(false);
+            healthBarParent.SetActive(false);
         }
     }
 
@@ -221,17 +200,5 @@ public class HealthBar : MonoBehaviour
             healthComponent.onHealthChanged.RemoveListener(UpdateHealthBar);
             healthComponent.onDeath.RemoveListener(OnDeath);
         }
-    }
-
-    [ContextMenu("Debug Health Bar")]
-    void DebugHealthBar()
-    {
-        Debug.Log($"=== HEALTH BAR DEBUG: {gameObject.name} ===");
-        Debug.Log($"Team: {(teamComponent != null ? teamComponent.GetTeam().ToString() : "None")}");
-        Debug.Log($"Team Color: {teamColor}");
-        Debug.Log($"Health: {healthComponent.GetHealth()}/{healthComponent.GetMaxHealth()}");
-        Debug.Log($"HealthBar Parent: {healthBarParent != null}");
-        Debug.Log($"HealthBar Active: {healthBarParent.gameObject.activeInHierarchy}");
-        Debug.Log("=== END DEBUG ===");
     }
 }
